@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JAL SkyBridge - Passenger</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .sos-container {
+      position: relative.
+      margin-top: 20px;
+      width: 100%;
+    }
+    .btn-sos {
+      background-color: var(--jal-red);
+      color: white;
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Progress bar animation for 1-sec hold */
+    #sos-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0%;
+      background: rgba(0, 0, 0, 0.25);
+      transition: width 0.05s linear;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>JAL SkyBridge</h1>
+    <div id="seat-info">Seat: <span id="display-seat">22A</span></div>
+  </header>
+
+  <div class="container">
+    <div style="margin: 15px 0; display: flex; gap: 10px; align-items: center;">
+      <label>Language:</label>
+      <select id="lang-select" onchange="changeLanguage()" style="padding: 6px; border-radius: 6px;">
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+        <option value="hi" selected>हिन्दी</option>
+      </select>
+    </div>
+
+    <div class="card-grid" id="icon-grid">
+      <!-- Rendered via JS -->
+    </div>
+
+    <div id="status-box" style="margin-top: 20px; padding: 15px; background: white; border-radius: 12px; text-align: center; font-weight: bold; display: none;">
+      <span id="status-text"></span>
+    </div>
+
+    <!-- SOS Button with 1-sec Hold Logic -->
+    <div class="sos-container">
+      <button class="btn-sos" 
+        onmousedown="startSosHold()" onmouseup="cancelSosHold()" onmouseleave="cancelSosHold()"
+        ontouchstart="startSosHold()" ontouchend="cancelSosHold()">
+        <div id="sos-progress"></div>
+        🚨 HOLD 1 SEC FOR SOS
+      </button>
+    </div>
+  </div>
+
+  <script src="phrases.js"></script>
+  <script src="config.js"></script>
+  <script>
+    let currentLang = 'hi';
+    let myRequestId = null;
+    let sosTimer = null;
+    let sosInterval = null;
+
+    function renderUI() {
+      const grid = document.getElementById('icon-grid');
+      grid.innerHTML = '';
+      
+      const icons = [
+        { type: 'water', emoji: '💧' },
+        { type: 'meal', emoji: '🍱' },
+        { type: 'blanket', emoji: '🛌' },
+        { type: 'restroom', emoji: '🚻' },
+        { type: 'unwell', emoji: '🩺' },
+        { type: 'ask', emoji: '🙋‍♂️' }
+      ];
+
+      icons.forEach(item => {
+        const label = PHRASES.labels[item.type][currentLang];
+        const card = document.createElement('div');
+        card.className = 'action-card';
+        card.innerHTML = `<span>${item.emoji}</span>${label}`;
+        card.onclick = () => sendRequest(item.type);
+        grid.appendChild(card);
+      });
+    }
+
+    function changeLanguage() {
+      currentLang = document.getElementById('lang-select').value;
+      renderUI();
+    }
+
+    async function sendRequest(type) {
+      const seatRow = 22;
+      const seatLetter = 'A';
+      const zone = Math.ceil(seatRow / 4);
+
+      const box = document.getElementById('status-box');
+      const text = document.getElementById('status-text');
+      box.style.display = 'block';
+      text.innerText = PHRASES.ui.waiting[currentLang];
+
+      // If unwell, also fire a medical alert to the alerts table
+      if (type === 'unwell') {
+        await supabaseClient.from('alerts').insert([{
+          seat_row: seatRow,
+          seat_letter: seatLetter,
+          kind: 'unwell'
+        }]);
+      }
+
+      const { data, error } = await supabaseClient
+        .from('requests')
+        .insert([{
+          seat_row: seatRow,
+          seat_letter: seatLetter,
+          zone: zone,
+          type: type,
+          language: currentLang,
+          status: 'waiting'
+        }])
+        .select();
+
+      if (error) {
+        alert('Error sending request: ' + error.message);
+        box.style.display = 'none';
+        return;
+      }
+
+      if (data && data.length > 0) {
+        myRequestId = data[0].id;
+        listenToMyRequest();
+      }
+    }
+
+    function listenToMyRequest() {
+      supabaseClient
+        .channel('passenger-status')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `id=eq.${myRequestId}` }, payload => {
+          const newStatus = payload.new.status;
+          const replyKey = payload.new.reply_key;
+          const text = document.getElementById('status-text');
+          
+          if (newStatus === 'on_the_way') {
+            text.innerText = PHRASES.replies[replyKey]?.[currentLang] || PHRASES.ui.on_the_way[currentLang];
+          } else if (newStatus === 'done') {
+            text.innerText = PHRASES.ui.done[currentLang];
+          }
+        })
+        .subscribe();
+    }
+
+    // 1-Second Hold Logic for SOS
+    function startSosHold() {
+      const progressBar = document.getElementById('sos-progress');
+      let startTime = Date.now();
+      let duration = 1000; // 1 second
+
+      progressBar.style.width = '0%';
+      
+      sosInterval = setInterval(() => {
+        let elapsed = Date.now() - startTime;
+        let pct = (elapsed / duration) * 100;
+        if (pct >= 100) {
+          pct = 100;
+          clearInterval(sosInterval);
+          triggerSOS();
+        }
+        progressBar.style.width = pct + '%';
+      }, 20);
+    }
+
+    function cancelSosHold() {
+      clearInterval(sosInterval);
+      document.getElementById('sos-progress').style.width = '0%';
+    }
+
+    async function triggerSOS() {
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      await supabaseClient.from('alerts').insert([{
+        seat_row: 22,
+        seat_letter: 'A',
+        kind: 'sos'
+      }]);
+      alert('🚨 EMERGENCY SOS SENT TO CHIEF PURSER!');
+    }
+
+    window.onload = renderUI;
+  </script>
+</body>
+</html>
