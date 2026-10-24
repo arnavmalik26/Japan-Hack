@@ -4,9 +4,47 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JAL SkyBridge - Crew Dashboard</title>
-  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    :root {
+      --jal-navy: #0b1f3f;
+      --jal-red: #d9222a;
+      --jal-cream: #f8f6f0;
+      --jal-gray: #e2e8f0;
+      --text-dark: #1e293b;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--jal-cream);
+      color: var(--text-dark);
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    header {
+      background-color: var(--jal-navy);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 4px solid var(--jal-red);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: white;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 16px;
+    }
+
     .alert-banner {
       background: var(--jal-red);
       color: white;
@@ -18,6 +56,7 @@
       justify-content: space-between;
       align-items: center;
     }
+
     .cabin-grid {
       background: white;
       border: 1px solid var(--jal-gray);
@@ -26,6 +65,7 @@
       margin-bottom: 20px;
       overflow-x: auto;
     }
+
     .seat-row-display {
       display: flex;
       gap: 6px;
@@ -33,6 +73,7 @@
       align-items: center;
       font-size: 0.85rem;
     }
+
     .seat-box {
       width: 32px;
       height: 32px;
@@ -45,10 +86,16 @@
       font-size: 0.75rem;
       color: #334155;
     }
+
     .seat-box.waiting { background: #f59e0b; color: white; }
     .seat-box.sos { background: var(--jal-red); color: white; animation: pulse 1s infinite; }
     .seat-box.active { background: #16a34a; color: white; }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+    @keyframes pulse { 
+      0% { opacity: 1; } 
+      50% { opacity: 0.5; } 
+      100% { opacity: 1; } 
+    }
 
     .trip-card {
       background: white;
@@ -61,6 +108,7 @@
       justify-content: space-between;
       align-items: center;
     }
+
     .btn-action {
       background: var(--jal-navy);
       color: white;
@@ -71,6 +119,7 @@
       font-weight: 600;
       margin-left: 6px;
     }
+
     .btn-action:hover { opacity: 0.9; }
     .demo-controls { margin-bottom: 20px; display: flex; gap: 10px; }
   </style>
@@ -80,11 +129,11 @@
     <h1>JAL SkyBridge - Crew Dashboard</h1>
     <div>
       <button class="btn-action" onclick="audioUnlock()" style="background:#0284c7;">🔊 Start Shift (Audio)</button>
-      <span id="connection-status">Live Connected</span>
+      <span id="connection-status" style="color: white; margin-left: 10px;">Live Connected</span>
     </div>
   </header>
 
-  <div class="container" style="max-width: 800px;">
+  <div class="container">
     <div class="demo-controls">
       <button class="btn-action" style="background:#9333ea;" onclick="simulate10()">⚡ Simulate 10 Passengers</button>
       <button class="btn-action" style="background:#dc2626;" onclick="resetDemo()">🗑️ Reset Demo</button>
@@ -242,7 +291,6 @@
         rowDiv.appendChild(label);
 
         letters.forEach((lettr, idx) => {
-          // Check if seat has request or alert
           const req = requestsState.find(q => q.seat_row === r && q.seat_letter === lettr);
           const alt = alertsState.find(a => a.seat_row === r && a.seat_letter === lettr);
 
@@ -261,7 +309,6 @@
 
           rowDiv.appendChild(seat);
 
-          // Add aisle space between C and D
           if (idx === 2) {
             const aisle = document.createElement('div');
             aisle.style.width = '20px';
