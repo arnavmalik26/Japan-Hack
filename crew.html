@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JAL SkyBridge - Crew Terminal</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="phrasepacks.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0A0F16;
+            --bg-panel: #16202E;
+            --bg-card: #202B3C;
+            --text-main: #FFFFFF;
+            --text-muted: #8E9BAE;
+            --jal-red: #CC0000;
+            --jal-red-flash: #FF3333;
+            --border: #2A3649;
+            --accent: #4A90E2;
+            --success: #2E7D32;
+        }
+
+        body {
+            background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
+            margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; font-size: 16px;
+        }
+        
+        button { 
+            background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; 
+            padding: 8px 16px; cursor: pointer; transition: background 0.2s; font-family: inherit;
+        }
+        button:hover { background: #2A384C; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--text-main); color: var(--bg-dark); font-weight: bold; }
+        .btn-primary:hover { background: #E0E0E0; }
+        .btn-danger { border-color: var(--jal-red); color: #FF6B6B; }
+
+        .layout { display: flex; width: 100%; height: 100%; }
+        
+        /* Left Sidebar: Seatmap & Admin */
+        .sidebar { width: 320px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+        .seatmap-container { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .row-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; align-items: center; }
+        .row-num { font-size: 12px; color: var(--text-muted); text-align: center; }
+        .seat { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; height: 36px; display: flex; justify-content: center; align-items: center; font-size: 12px; cursor: pointer; }
+        .seat.aisle { background: transparent; border: none; pointer-events: none; }
+        .seat.pending { border-color: var(--accent); background: rgba(74, 144, 226, 0.2); }
+        .seat.emergency { border-color: var(--jal-red); background: rgba(204, 0, 0, 0.3); animation: pulse 2s infinite; }
+        .seat.selected { outline: 2px solid #FFF; }
+        
+        /* Trip Border Visualization */
+        .trip-row-wrap { border: 2px dashed var(--text-muted); border-radius: 6px; padding: 4px; margin-bottom: 8px; }
+
+        .admin-panel { padding: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+
+        /* Main Area */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        
+        /* Alerts */
+        .alert-banner { background: var(--jal-red); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; display: none; }
+        .alert-banner.flashing { animation: flashbg 1s infinite alternate; }
+        @keyframes flashbg { from { background: var(--jal-red); } to { background: var(--jal-red-flash); } }
+        @media (prefers-reduced-motion: reduce) { .alert-banner.flashing { animation: none; border: 4px solid yellow; } }
+
+        .header { padding: 20px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); align-items: center; }
+        
+        .list-container { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+        /* Cards & Trips */
+        .trip-card { background: rgba(22, 32, 46, 0.6); border: 1px dashed var(--accent); border-radius: 12px; padding: 20px; }
+        .trip-header { display: flex; justify-content: space-between; margin-bottom: 15px; color: var(--accent); font-weight: bold; }
+        
+        .req-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .req-card.priority-1 { border-left: 4px solid var(--jal-red); }
+        .req-card.priority-2 { border-left: 4px solid orange; }
+        .req-card.status-done { opacity: 0.6; }
+        
+        .req-top { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-muted); }
+        .req-seat { font-size: 24px; font-weight: bold; color: var(--text-main); }
+        .req-main { font-size: 32px; font-weight: bold; }
+        .req-sub { font-size: 18px; color: #B0BEC5; }
+        .req-orig { font-size: 14px; font-style: italic; color: var(--text-muted); display: none; margin-top: 10px; background: var(--bg-dark); padding: 10px; border-radius: 6px;}
+        
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+        .chip { padding: 4px 8px; border-radius: 12px; font-size: 12px; background: var(--bg-dark); border: 1px solid var(--border); }
+        .chip.new { border-color: var(--accent); color: var(--accent); }
+        .chip.done { border-color: var(--success); color: var(--success); }
+
+        .announce-panel { position: absolute; right: -400px; top: 0; width: 350px; height: 100%; background: var(--bg-panel); border-left: 1px solid var(--border); transition: right 0.3s; padding: 20px; overflow-y: auto; z-index: 100; box-shadow: -5px 0 15px rgba(0,0,0,0.5); }
+        .announce-panel.open { right: 0; }
+        .safety-btn { display: flex; align-items: center; justify-content: flex-start; text-align: left; gap: 15px; width: 100%; margin-bottom: 10px; padding: 15px; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+    <div class="sidebar">
+        <div class="sidebar-header">JL-DEMO &bull; Cabin View</div>
+        <div class="seatmap-container" id="seatmap"></div>
+        <div class="admin-panel">
+            <button onclick="toggleAnnounce()" style="background: var(--accent); color: #fff; font-weight: bold;">📢 PA Announcements</button>
+            <button onclick="simulatePassengers()">🧪 Simulate 10 Requests</button>
+            <button class="btn-danger" onclick="clearData()">🗑️ Clear Demo Data</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div id="alert-banner" class="alert-banner">
+            <div>
+                <strong style="font-size: 24px;" id="alert-seat">14C</strong> &bull; 
+                <span id="alert-ja" style="font-size: 20px; margin-left: 10px; font-weight: bold;"></span>
+                <span id="alert-en" style="font-size: 16px; margin-left: 10px; opacity: 0.9;"></span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="acknowledgeAlert()" style="background: #fff; color: var(--jal-red); font-weight: bold;">Acknowledge</button>
+            </div>
+        </div>
+
+        <div class="header">
+            <div>
+                <h2 style="margin: 0;">Passenger Requests</h2>
+                <div style="color: var(--text-muted); font-size: 14px; margin-top: 5px;" id="filter-status">Viewing all seats</div>
+            </div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <button id="btn-audio" onclick="enableAudio()" style="border-color: var(--jal-red); color: #fff;">🔇 Enable Alerts</button>
+                <div id="clock" style="font-size: 20px; font-weight: bold; font-variant-numeric: tabular-nums;">00:00</div>
+            </div>
+        </div>
+
+        <div class="list-container" id="list-container"></div>
+        
+        <div id="announce-panel" class="announce-panel">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <h3>Announce to Cabin</h3>
+                <button onclick="toggleAnnounce()">✕</button>
+            </div>
+            <div id="announce-list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Task C2: Batching Logic (Pure Function) ---
+    function groupIntoTrips(requests, now) {
+        const trips = [];
+        const singleRequests = [];
+        const zoneMap = {};
+
+        requests.forEach(req => {
+            if (req.priority < 3 || req.status !== 'new') {
+                singleRequests.push(req);
+                return;
+            }
+            if (!zoneMap[req.zone]) zoneMap[req.zone] = [];
+            zoneMap[req.zone].push(req);
+        });
+
+        for (const zone in zoneMap) {
+            const reqs = zoneMap[zone];
+            const oldestTime = Math.min(...reqs.map(r => new Date(r.created_at).getTime()));
+            const waitMins = (now - oldestTime) / 60000;
+
+            if (reqs.length >= 2 || waitMins >= 2) {
+                const rows = [...new Set(reqs.map(r => r.row_num))].sort((a,b)=>a-b);
+                const rowStr = rows.length > 1 ? `Rows ${Math.min(...rows)}-${Math.max(...rows)}` : `Row ${rows[0]}`;
+                const counts = {};
+                reqs.forEach(r => { counts[r.subtype] = (counts[r.subtype] || 0) + 1; });
+                const rationale = reqs.length >= 2 ? `Merged: same zone (${reqs.length} reqs)` : `Merged: oldest waiting > 2 min`;
+                
+                trips.push({ isTrip: true, zone: parseInt(zone), rows: rowStr, counts, rationale, requests: reqs });
+            } else {
+                singleRequests.push(...reqs);
+            }
+        }
+        return { trips, singleRequests };
+    }
+
+    // Console Assertions for groupIntoTrips
+    (function testGroupIntoTrips() {
+        const now = 1000000;
+        const makeReq = (id, prio, stat, zone, row, minWait) => ({ id, priority: prio, status: stat, zone, row_num: row, subtype: 'water', created_at: new Date(now - (minWait * 60000)).toISOString() });
+        
+        // Test 1: Emergency never batched
+        let res = groupIntoTrips([makeReq(1, 1, 'new', 1, 10, 5)], now);
+        console.assert(res.trips.length === 0 && res.singleRequests.length === 1, "Test 1 Failed: Emg batched");
+        
+        // Test 2: Done never batched
+        res = groupIntoTrips([makeReq(2, 3, 'done', 1, 10, 5)], now);
+        console.assert(res.trips.length === 0 && res.singleRequests.length === 1, "Test 2 Failed: Done batched");
+        
+        // Test 3: >=2 requests in same zone = trip
+        res = groupIntoTrips([makeReq(3, 3, 'new', 2, 12, 1), makeReq(4, 3, 'new', 2, 14, 1)], now);
+        console.assert(res.trips.length === 1 && res.singleRequests.length === 0, "Test 3 Failed: Not batched by count");
+        
+        // Test 4: 1 request > 2 mins = trip
+        res = groupIntoTrips([makeReq(5, 3, 'new', 3, 20, 3)], now);
+        console.assert(res.trips.length === 1 && res.singleRequests.length === 0, "Test 4 Failed: Not batched by time");
+        
+        // Test 5: 1 request < 2 mins = single
+        res = groupIntoTrips([makeReq(6, 3, 'new', 4, 30, 1)], now);
+        console.assert(res.trips.length === 0 && res.singleRequests.length === 1, "Test 5 Failed: Batched prematurely");
+        
+        console.log("All 5 groupIntoTrips console.assert tests passed.");
+    })();
+
+    // --- State & Supabase ---
+    const SUPABASE_URL = 'YOUR_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_KEY';
+    let db = null;
+    if (typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('http')) {
+        db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    let requests = [];
+    let seatFilter = null;
+    let audioCtx = null;
+    let alertInterval = null;
+    let currentAlertId = null;
+    let alertWaitStart = 0;
+
+    // --- Init & UI Tasks ---
+    function init() {
+        setInterval(() => {
+            const d = new Date();
+            document.getElementById('clock').innerText = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }, 1000);
+
+        setInterval(renderMain, 30000); // Re-calculate wait times & batches every 30s
+        setInterval(checkAlertEscalation, 1000);
+
+        buildSeatmap();
+        buildAnnouncePanel();
+        if (db) fetchRequests();
+    }
+
+    async function fetchRequests() {
+        const { data, error } = await db.from('requests').select('*').eq('flight', 'JL-DEMO').order('created_at', { ascending: false });
+        if (data) { requests = data; renderMain(); }
+
+        db.channel('crew-channel')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: 'flight=eq.JL-DEMO' }, payload => {
+              requests.unshift(payload.new);
+              if (payload.new.priority <= 2 && payload.new.status === 'new') triggerAlert(payload.new);
+              renderMain();
+          })
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: 'flight=eq.JL-DEMO' }, payload => {
+              requests = requests.map(r => r.id === payload.new.id ? payload.new : r);
+              if (payload.new.id === currentAlertId && payload.new.status !== 'new') closeAlert();
+              renderMain();
+          }).subscribe();
+    }
+
+    // --- Task C4: Audio & Alert Banner ---
+    function enableAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        document.getElementById('btn-audio').innerText = "🔊 Alerts Enabled";
+        document.getElementById('btn-audio').style.background = '#2E7D32';
+        document.getElementById('btn-audio').style.borderColor = '#2E7D32';
+    }
+
+    function beep(fast = false) {
+        if (!audioCtx || audioCtx.state === 'suspended') return;
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = fast ? 800 : 400;
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function triggerAlert(req) {
+        if (currentAlertId) return; // one at a time
+        currentAlertId = req.id;
+        alertWaitStart = Date.now();
+        document.getElementById('alert-seat').innerText = req.seat;
+        document.getElementById('alert-ja').innerText = req.text_ja;
+        document.getElementById('alert-en').innerText = req.text_en;
+        const banner = document.getElementById('alert-banner');
+        banner.style.display = 'flex';
+        banner.classList.remove('flashing');
+        
+        if (alertInterval) clearInterval(alertInterval);
+        beep();
+        alertInterval = setInterval(() => beep(), 3000);
+    }
+
+    function checkAlertEscalation() {
+        if (!currentAlertId) return;
+        const elapsed = (Date.now() - alertWaitStart) / 1000;
+        if (elapsed > 30) {
+            document.getElementById('alert-banner').classList.add('flashing');
+            clearInterval(alertInterval);
+            alertInterval = setInterval(() => beep(true), 1500); // faster, higher beep
+            alertWaitStart = Date.now() + 999999; // prevent re-triggering this block
+        }
+    }
+
+    async function acknowledgeAlert() {
+        if (!currentAlertId || !db) return;
+        await db.from('requests').update({ status: 'acknowledged' }).eq('id', currentAlertId);
+        closeAlert();
+    }
+
+    function closeAlert() {
+        document.getElementById('alert-banner').style.display = 'none';
+        document.getElementById('alert-banner').classList.remove('flashing');
+        if (alertInterval) clearInterval(alertInterval);
+        currentAlertId = null;
+    }
+
+    // --- Render Logic ---
+    function getIcon(subtype) {
+        const item = PACK.requests.find(r => r.id === subtype);
+        return item ? item.icon : '🛎️';
+    }
+
+    function renderMain() {
+        renderSeatmap();
+        
+        const filtered = seatFilter ? requests.filter(r => r.seat === seatFilter) : requests;
+        const now = Date.now();
+        const { trips, singleRequests } = groupIntoTrips(filtered, now);
+        
+        const container = document.getElementById('list-container');
+        container.innerHTML = '';
+        
+        // Render Trips first
+        trips.forEach(trip => {
+            const ids = trip.requests.map(r => r.id);
+            let countsHtml = '';
+            for (const [subtype, count] of Object.entries(trip.counts)) {
+                countsHtml += `<span class="chip">${count}x ${getIcon(subtype)}</span> `;
+            }
+            
+            const html = `
+                <div class="trip-card">
+                    <div class="trip-header">
+                        <span>Zone ${trip.zone} &bull; ${trip.rows}</span>
+                        <span>${trip.rationale}</span>
+                    </div>
+                    <div style="margin-bottom: 15px;">${countsHtml}</div>
+                    ${generateActionsHtml(ids, trip.requests[0].status)}
+                    <div style="margin-top: 15px; border-left: 2px solid var(--border); padding-left: 15px; display: flex; flex-direction: column; gap: 10px;">
+                        ${trip.requests.map(r => generateRequestCard(r, now, true)).join('')}
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        });
+
+        // Render Single Requests (sort by priority then time)
+        singleRequests.sort((a,b) => {
+            if (a.priority !== b.priority) return a.priority - b.priority;
+            return new Date(b.created_at) - new Date(a.created_at);
+        }).forEach(req => {
+            container.insertAdjacentHTML('beforeend', generateRequestCard(req, now, false));
+        });
+    }
+
+    // --- Task C1: Individual Card Generation ---
+    function generateRequestCard(req, now, isInner = false) {
+        const waitMins = Math.floor((now - new Date(req.created_at).getTime()) / 60000);
+        const waitStr = waitMins === 0 ? 'Just now' : `${waitMins}m ago`;
+        
+        let actionsHtml = isInner ? '' : generateActionsHtml([req.id], req.status);
+        
+        return `
+            <div class="req-card priority-${req.priority} status-${req.status}" id="req-${req.id}">
+                <div class="req-top">
+                    <div>
+                        <span class="chip ${req.status}">${req.status.replace('_', ' ').toUpperCase()}</span>
+                        <span style="margin-left: 10px;">${req.priority === 1 ? '🚨 EMERGENCY' : req.priority === 2 ? '⚕️ MEDICAL' : ''}</span>
+                    </div>
+                    <div>${waitStr}</div>
+                </div>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div class="req-seat">${req.seat}</div>
+                    <div style="font-size: 40px; margin-right: 10px;">${getIcon(req.subtype)}</div>
+                    <div style="flex-grow: 1;">
+                        <div class="req-main">${req.text_ja}</div>
+                        <div class="req-sub">${req.text_en}</div>
+                        <div class="req-orig" id="orig-${req.id}">${req.lang.toUpperCase()}: ${req.text_original}</div>
+                    </div>
+                    <div>
+                        <button onclick="document.getElementById('orig-${req.id}').style.display = document.getElementById('orig-${req.id}').style.display === 'block' ? 'none' : 'block'">Show Original</button>
+                    </div>
+                </div>
+                ${actionsHtml}
+            </div>
+        `;
+    }
+
+    // --- Task C3: Actions ---
+    function generateActionsHtml(ids, currentStatus) {
+        const idListStr = JSON.stringify(ids).replace(/"/g, '&quot;');
+        
+        let repliesHtml = '';
+        if (currentStatus !== 'done' && currentStatus !== 'cannot_fulfil') {
+            repliesHtml = PACK.replies.map(rep => {
+                const isAlternative = rep.id === 'alternative';
+                const action = isAlternative ? 'cannot_fulfil' : 'done';
+                return `<button onclick="updateRequests(${idListStr}, '${action}', '${rep.id}')">${rep.icon} ${rep.text.ja}</button>`;
+            }).join('');
+        }
+
+        return `
+            <div class="actions">
+                ${currentStatus === 'new' ? `<button class="btn-primary" onclick="updateRequests(${idListStr}, 'acknowledged', null)">Accept</button>` : ''}
+                ${currentStatus !== 'done' ? `<button onclick="updateRequests(${idListStr}, 'on_the_way', null)">On the way</button>` : ''}
+                ${currentStatus !== 'done' ? `<button onclick="updateRequests(${idListStr}, 'done', null)">Mark Done</button>` : ''}
+                ${repliesHtml}
+            </div>
+        `;
+    }
+
+    async function updateRequests(ids, status, replyId) {
+        if (!db) return;
+        const payload = { status };
+        if (replyId) payload.reply_id = replyId;
+        await db.from('requests').update(payload).in('id', ids);
+    }
+
+    // --- Task C6: Mini Seat Map ---
+    function buildSeatmap() {
+        const c = document.getElementById('seatmap');
+        let html = '';
+        for (let row = 1; row <= 20; row++) {
+            html += `<div class="row-grid"><div class="row-num">${row}</div>`;
+            ['A','B','C','aisle','D','E','F'].forEach(l => {
+                if (l === 'aisle') { html += `<div class="seat aisle"></div>`; }
+                else { html += `<div class="seat" id="seat-${row}${l}" onclick="toggleSeatFilter('${row}${l}')">${l}</div>`; }
+            });
+            html += `</div>`;
+        }
+        c.innerHTML = html;
+    }
+
+    function toggleSeatFilter(seat) {
+        if (seatFilter === seat) { seatFilter = null; document.getElementById('filter-status').innerText = 'Viewing all seats'; }
+        else { seatFilter = seat; document.getElementById('filter-status').innerText = `Filtering by Seat: ${seat}`; }
+        renderMain();
+    }
+
+    function renderSeatmap() {
+        document.querySelectorAll('.seat').forEach(el => {
+            el.className = 'seat';
+            if (el.id === `seat-${seatFilter}`) el.classList.add('selected');
+        });
+        
+        // Find pending
+        requests.filter(r => r.status === 'new').forEach(r => {
+            const el = document.getElementById(`seat-${r.seat}`);
+            if (el) el.classList.add(r.priority <= 2 ? 'emergency' : 'pending');
+        });
+    }
+
+    // --- Task C5: Announce & Mocking ---
+    function toggleAnnounce() {
+        document.getElementById('announce-panel').classList.toggle('open');
+    }
+
+    function buildAnnouncePanel() {
+        const c = document.getElementById('announce-list');
+        c.innerHTML = PACK.safety.map(s => `
+            <button class="safety-btn" onclick="triggerAnnounce('${s.id}')">
+                <span style="font-size: 24px;">${s.icon}</span> 
+                <div>
+                    <div style="font-weight: bold;">${s.text.ja}</div>
+                    <div style="font-size: 14px; color: var(--text-muted);">${s.text.en}</div>
+                </div>
+            </button>
+        `).join('');
+    }
+
+    async function triggerAnnounce(phraseId) {
+        if (!db) return;
+        await db.from('announcements').insert([{ phrase_id: phraseId, flight: 'JL-DEMO' }]);
+        toggleAnnounce();
+        alert('Announcement sent to cabin screens.');
+    }
+
+    async function simulatePassengers() {
+        if (!db) return;
+        const routineIds = ['water', 'tea_coffee', 'blanket', 'pillow', 'veg_meal'];
+        const langs = ['hi', 'pa', 'ta', 'en'];
+        const mockRows = [];
+        for (let i=0; i<10; i++) {
+            const row = Math.floor(Math.random() * 18) + 5; // 5 to 22
+            const letter = ['A','B','C','D','E','F'][Math.floor(Math.random() * 6)];
+            const subtypeId = routineIds[Math.floor(Math.random() * routineIds.length)];
+            const lang = langs[Math.floor(Math.random() * langs.length)];
+            const pdata = PACK.requests.find(r => r.id === subtypeId);
+            
+            mockRows.push({
+                flight: 'JL-DEMO', seat: `${row}${letter}`, row_num: row, seat_letter: letter, zone: Math.floor((row-1)/4)+1,
+                category: 'routine', subtype: subtypeId, priority: 3, status: 'new',
+                lang: lang, text_original: 'Mocked request', text_ja: pdata.text.ja, text_en: pdata.text.en
+            });
+        }
+        await db.from('requests').insert(mockRows);
+    }
+
+    async function clearData() {
+        if (!db || !confirm("Delete ALL demo requests?")) return;
+        await db.from('requests').delete().eq('flight', 'JL-DEMO');
+        requests = [];
+        renderMain();
+    }
+
+    init();
+</script>
+</body>
+</html>
