@@ -1,519 +1,322 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JAL SkyBridge - Crew Terminal</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="phrasepacks.js"></script>
-    <style>
-        :root {
-            --bg-dark: #0A0F16;
-            --bg-panel: #16202E;
-            --bg-card: #202B3C;
-            --text-main: #FFFFFF;
-            --text-muted: #8E9BAE;
-            --jal-red: #CC0000;
-            --jal-red-flash: #FF3333;
-            --border: #2A3649;
-            --accent: #4A90E2;
-            --success: #2E7D32;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JAL SkyBridge - Crew Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .alert-banner {
+      background: var(--jal-red);
+      color: white;
+      padding: 12px 20px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cabin-grid {
+      background: white;
+      border: 1px solid var(--jal-gray);
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .seat-row-display {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .seat-box {
+      width: 32px;
+      height: 32px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.75rem;
+      color: #334155;
+    }
+    .seat-box.waiting { background: #f59e0b; color: white; }
+    .seat-box.sos { background: var(--jal-red); color: white; animation: pulse 1s infinite; }
+    .seat-box.active { background: #16a34a; color: white; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        body {
-            background-color: var(--bg-dark); color: var(--text-main); font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
-            margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; font-size: 16px;
-        }
-        
-        button { 
-            background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; 
-            padding: 8px 16px; cursor: pointer; transition: background 0.2s; font-family: inherit;
-        }
-        button:hover { background: #2A384C; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-primary { background: var(--text-main); color: var(--bg-dark); font-weight: bold; }
-        .btn-primary:hover { background: #E0E0E0; }
-        .btn-danger { border-color: var(--jal-red); color: #FF6B6B; }
-
-        .layout { display: flex; width: 100%; height: 100%; }
-        
-        /* Left Sidebar: Seatmap & Admin */
-        .sidebar { width: 320px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); font-size: 20px; font-weight: bold; letter-spacing: 1px; }
-        .seatmap-container { flex-grow: 1; overflow-y: auto; padding: 20px; }
-        .row-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; align-items: center; }
-        .row-num { font-size: 12px; color: var(--text-muted); text-align: center; }
-        .seat { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; height: 36px; display: flex; justify-content: center; align-items: center; font-size: 12px; cursor: pointer; }
-        .seat.aisle { background: transparent; border: none; pointer-events: none; }
-        .seat.pending { border-color: var(--accent); background: rgba(74, 144, 226, 0.2); }
-        .seat.emergency { border-color: var(--jal-red); background: rgba(204, 0, 0, 0.3); animation: pulse 2s infinite; }
-        .seat.selected { outline: 2px solid #FFF; }
-        
-        /* Trip Border Visualization */
-        .trip-row-wrap { border: 2px dashed var(--text-muted); border-radius: 6px; padding: 4px; margin-bottom: 8px; }
-
-        .admin-panel { padding: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
-
-        /* Main Area */
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-        
-        /* Alerts */
-        .alert-banner { background: var(--jal-red); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; display: none; }
-        .alert-banner.flashing { animation: flashbg 1s infinite alternate; }
-        @keyframes flashbg { from { background: var(--jal-red); } to { background: var(--jal-red-flash); } }
-        @media (prefers-reduced-motion: reduce) { .alert-banner.flashing { animation: none; border: 4px solid yellow; } }
-
-        .header { padding: 20px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); align-items: center; }
-        
-        .list-container { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-
-        /* Cards & Trips */
-        .trip-card { background: rgba(22, 32, 46, 0.6); border: 1px dashed var(--accent); border-radius: 12px; padding: 20px; }
-        .trip-header { display: flex; justify-content: space-between; margin-bottom: 15px; color: var(--accent); font-weight: bold; }
-        
-        .req-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .req-card.priority-1 { border-left: 4px solid var(--jal-red); }
-        .req-card.priority-2 { border-left: 4px solid orange; }
-        .req-card.status-done { opacity: 0.6; }
-        
-        .req-top { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-muted); }
-        .req-seat { font-size: 24px; font-weight: bold; color: var(--text-main); }
-        .req-main { font-size: 32px; font-weight: bold; }
-        .req-sub { font-size: 18px; color: #B0BEC5; }
-        .req-orig { font-size: 14px; font-style: italic; color: var(--text-muted); display: none; margin-top: 10px; background: var(--bg-dark); padding: 10px; border-radius: 6px;}
-        
-        .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-        .chip { padding: 4px 8px; border-radius: 12px; font-size: 12px; background: var(--bg-dark); border: 1px solid var(--border); }
-        .chip.new { border-color: var(--accent); color: var(--accent); }
-        .chip.done { border-color: var(--success); color: var(--success); }
-
-        .announce-panel { position: absolute; right: -400px; top: 0; width: 350px; height: 100%; background: var(--bg-panel); border-left: 1px solid var(--border); transition: right 0.3s; padding: 20px; overflow-y: auto; z-index: 100; box-shadow: -5px 0 15px rgba(0,0,0,0.5); }
-        .announce-panel.open { right: 0; }
-        .safety-btn { display: flex; align-items: center; justify-content: flex-start; text-align: left; gap: 15px; width: 100%; margin-bottom: 10px; padding: 15px; font-size: 18px; }
-    </style>
+    .trip-card {
+      background: white;
+      border: 1px solid var(--jal-gray);
+      border-left: 6px solid var(--jal-navy);
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-action {
+      background: var(--jal-navy);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .btn-action:hover { opacity: 0.9; }
+    .demo-controls { margin-bottom: 20px; display: flex; gap: 10px; }
+  </style>
 </head>
 <body>
+  <header>
+    <h1>JAL SkyBridge - Crew Dashboard</h1>
+    <div>
+      <button class="btn-action" onclick="audioUnlock()" style="background:#0284c7;">🔊 Start Shift (Audio)</button>
+      <span id="connection-status">Live Connected</span>
+    </div>
+  </header>
 
-<div class="layout">
-    <div class="sidebar">
-        <div class="sidebar-header">JL-DEMO &bull; Cabin View</div>
-        <div class="seatmap-container" id="seatmap"></div>
-        <div class="admin-panel">
-            <button onclick="toggleAnnounce()" style="background: var(--accent); color: #fff; font-weight: bold;">📢 PA Announcements</button>
-            <button onclick="simulatePassengers()">🧪 Simulate 10 Requests</button>
-            <button class="btn-danger" onclick="clearData()">🗑️ Clear Demo Data</button>
-        </div>
+  <div class="container" style="max-width: 800px;">
+    <div class="demo-controls">
+      <button class="btn-action" style="background:#9333ea;" onclick="simulate10()">⚡ Simulate 10 Passengers</button>
+      <button class="btn-action" style="background:#dc2626;" onclick="resetDemo()">🗑️ Reset Demo</button>
     </div>
 
-    <div class="main-content">
-        <div id="alert-banner" class="alert-banner">
-            <div>
-                <strong style="font-size: 24px;" id="alert-seat">14C</strong> &bull; 
-                <span id="alert-ja" style="font-size: 20px; margin-left: 10px; font-weight: bold;"></span>
-                <span id="alert-en" style="font-size: 16px; margin-left: 10px; opacity: 0.9;"></span>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="acknowledgeAlert()" style="background: #fff; color: var(--jal-red); font-weight: bold;">Acknowledge</button>
-            </div>
-        </div>
+    <div id="alert-container"></div>
 
-        <div class="header">
-            <div>
-                <h2 style="margin: 0;">Passenger Requests</h2>
-                <div style="color: var(--text-muted); font-size: 14px; margin-top: 5px;" id="filter-status">Viewing all seats</div>
-            </div>
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <button id="btn-audio" onclick="enableAudio()" style="border-color: var(--jal-red); color: #fff;">🔇 Enable Alerts</button>
-                <div id="clock" style="font-size: 20px; font-weight: bold; font-variant-numeric: tabular-nums;">00:00</div>
-            </div>
-        </div>
-
-        <div class="list-container" id="list-container"></div>
-        
-        <div id="announce-panel" class="announce-panel">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                <h3>Announce to Cabin</h3>
-                <button onclick="toggleAnnounce()">✕</button>
-            </div>
-            <div id="announce-list"></div>
-        </div>
+    <!-- Visual Jet Cabin Seat Map -->
+    <h2>Visual Cabin Seat Map (Rows 1-30)</h2>
+    <div class="cabin-grid" id="cabin-map">
+      <p style="color: #64748b;">Loading cabin layout...</p>
     </div>
-</div>
 
-<script>
-    // --- Task C2: Batching Logic (Pure Function) ---
-    function groupIntoTrips(requests, now) {
-        const trips = [];
-        const singleRequests = [];
-        const zoneMap = {};
+    <h2>Batched Cabin Trips (Zone-wise)</h2>
+    <div id="trips-list">
+      <p style="color: #64748b;">Waiting for requests...</p>
+    </div>
+  </div>
 
-        requests.forEach(req => {
-            if (req.priority < 3 || req.status !== 'new') {
-                singleRequests.push(req);
-                return;
-            }
-            if (!zoneMap[req.zone]) zoneMap[req.zone] = [];
-            zoneMap[req.zone].push(req);
-        });
-
-        for (const zone in zoneMap) {
-            const reqs = zoneMap[zone];
-            const oldestTime = Math.min(...reqs.map(r => new Date(r.created_at).getTime()));
-            const waitMins = (now - oldestTime) / 60000;
-
-            if (reqs.length >= 2 || waitMins >= 2) {
-                const rows = [...new Set(reqs.map(r => r.row_num))].sort((a,b)=>a-b);
-                const rowStr = rows.length > 1 ? `Rows ${Math.min(...rows)}-${Math.max(...rows)}` : `Row ${rows[0]}`;
-                const counts = {};
-                reqs.forEach(r => { counts[r.subtype] = (counts[r.subtype] || 0) + 1; });
-                const rationale = reqs.length >= 2 ? `Merged: same zone (${reqs.length} reqs)` : `Merged: oldest waiting > 2 min`;
-                
-                trips.push({ isTrip: true, zone: parseInt(zone), rows: rowStr, counts, rationale, requests: reqs });
-            } else {
-                singleRequests.push(...reqs);
-            }
-        }
-        return { trips, singleRequests };
-    }
-
-    // Console Assertions for groupIntoTrips
-    (function testGroupIntoTrips() {
-        const now = 1000000;
-        const makeReq = (id, prio, stat, zone, row, minWait) => ({ id, priority: prio, status: stat, zone, row_num: row, subtype: 'water', created_at: new Date(now - (minWait * 60000)).toISOString() });
-        
-        // Test 1: Emergency never batched
-        let res = groupIntoTrips([makeReq(1, 1, 'new', 1, 10, 5)], now);
-        console.assert(res.trips.length === 0 && res.singleRequests.length === 1, "Test 1 Failed: Emg batched");
-        
-        // Test 2: Done never batched
-        res = groupIntoTrips([makeReq(2, 3, 'done', 1, 10, 5)], now);
-        console.assert(res.trips.length === 0 && res.singleRequests.length === 1, "Test 2 Failed: Done batched");
-        
-        // Test 3: >=2 requests in same zone = trip
-        res = groupIntoTrips([makeReq(3, 3, 'new', 2, 12, 1), makeReq(4, 3, 'new', 2, 14, 1)], now);
-        console.assert(res.trips.length === 1 && res.singleRequests.length === 0, "Test 3 Failed: Not batched by count");
-        
-        // Test 4: 1 request > 2 mins = trip
-        res = groupIntoTrips([makeReq(5, 3, 'new', 3, 20, 3)], now);
-        console.assert(res.trips.length === 1 && res.singleRequests.length === 0, "Test 4 Failed: Not batched by time");
-        
-        // Test 5: 1 request < 2 mins = single
-        res = groupIntoTrips([makeReq(6, 3, 'new', 4, 30, 1)], now);
-        console.assert(res.trips.length === 0 && res.singleRequests.length === 1, "Test 5 Failed: Batched prematurely");
-        
-        console.log("All 5 groupIntoTrips console.assert tests passed.");
-    })();
-
-    // --- State & Supabase ---
-    const SUPABASE_URL = 'YOUR_URL';
-    const SUPABASE_ANON_KEY = 'YOUR_KEY';
-    let db = null;
-    if (typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('http')) {
-        db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }
-
-    let requests = [];
-    let seatFilter = null;
+  <script src="phrases.js"></script>
+  <script src="config.js"></script>
+  <script>
+    let requestsState = [];
+    let alertsState = [];
     let audioCtx = null;
-    let alertInterval = null;
-    let currentAlertId = null;
-    let alertWaitStart = 0;
 
-    // --- Init & UI Tasks ---
-    function init() {
-        setInterval(() => {
-            const d = new Date();
-            document.getElementById('clock').innerText = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        }, 1000);
-
-        setInterval(renderMain, 30000); // Re-calculate wait times & batches every 30s
-        setInterval(checkAlertEscalation, 1000);
-
-        buildSeatmap();
-        buildAnnouncePanel();
-        if (db) fetchRequests();
+    function audioUnlock() {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      alert('Audio unlocked for alert beeps!');
     }
 
-    async function fetchRequests() {
-        const { data, error } = await db.from('requests').select('*').eq('flight', 'JL-DEMO').order('created_at', { ascending: false });
-        if (data) { requests = data; renderMain(); }
-
-        db.channel('crew-channel')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: 'flight=eq.JL-DEMO' }, payload => {
-              requests.unshift(payload.new);
-              if (payload.new.priority <= 2 && payload.new.status === 'new') triggerAlert(payload.new);
-              renderMain();
-          })
-          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: 'flight=eq.JL-DEMO' }, payload => {
-              requests = requests.map(r => r.id === payload.new.id ? payload.new : r);
-              if (payload.new.id === currentAlertId && payload.new.status !== 'new') closeAlert();
-              renderMain();
-          }).subscribe();
+    function playBeep() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = 800;
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
     }
 
-    // --- Task C4: Audio & Alert Banner ---
-    function enableAudio() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        document.getElementById('btn-audio').innerText = "🔊 Alerts Enabled";
-        document.getElementById('btn-audio').style.background = '#2E7D32';
-        document.getElementById('btn-audio').style.borderColor = '#2E7D32';
+    async function initCrew() {
+      await fetchInitialData();
+      subscribeRealtime();
     }
 
-    function beep(fast = false) {
-        if (!audioCtx || audioCtx.state === 'suspended') return;
-        const osc = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        osc.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        osc.type = 'sine';
-        osc.frequency.value = fast ? 800 : 400;
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-        osc.start(audioCtx.currentTime);
-        osc.stop(audioCtx.currentTime + 0.1);
+    async function fetchInitialData() {
+      const { data: reqs } = await supabaseClient.from('requests').select('*').neq('status', 'done').order('created_at', { ascending: true });
+      if (reqs) requestsState = reqs;
+
+      const { data: alts } = await supabaseClient.from('alerts').select('*').eq('acknowledged', false).order('created_at', { ascending: true });
+      if (alts) alertsState = alts;
+
+      render();
     }
 
-    function triggerAlert(req) {
-        if (currentAlertId) return; // one at a time
-        currentAlertId = req.id;
-        alertWaitStart = Date.now();
-        document.getElementById('alert-seat').innerText = req.seat;
-        document.getElementById('alert-ja').innerText = req.text_ja;
-        document.getElementById('alert-en').innerText = req.text_en;
-        const banner = document.getElementById('alert-banner');
-        banner.style.display = 'flex';
-        banner.classList.remove('flashing');
-        
-        if (alertInterval) clearInterval(alertInterval);
-        beep();
-        alertInterval = setInterval(() => beep(), 3000);
-    }
-
-    function checkAlertEscalation() {
-        if (!currentAlertId) return;
-        const elapsed = (Date.now() - alertWaitStart) / 1000;
-        if (elapsed > 30) {
-            document.getElementById('alert-banner').classList.add('flashing');
-            clearInterval(alertInterval);
-            alertInterval = setInterval(() => beep(true), 1500); // faster, higher beep
-            alertWaitStart = Date.now() + 999999; // prevent re-triggering this block
-        }
-    }
-
-    async function acknowledgeAlert() {
-        if (!currentAlertId || !db) return;
-        await db.from('requests').update({ status: 'acknowledged' }).eq('id', currentAlertId);
-        closeAlert();
-    }
-
-    function closeAlert() {
-        document.getElementById('alert-banner').style.display = 'none';
-        document.getElementById('alert-banner').classList.remove('flashing');
-        if (alertInterval) clearInterval(alertInterval);
-        currentAlertId = null;
-    }
-
-    // --- Render Logic ---
-    function getIcon(subtype) {
-        const item = PACK.requests.find(r => r.id === subtype);
-        return item ? item.icon : '🛎️';
-    }
-
-    function renderMain() {
-        renderSeatmap();
-        
-        const filtered = seatFilter ? requests.filter(r => r.seat === seatFilter) : requests;
-        const now = Date.now();
-        const { trips, singleRequests } = groupIntoTrips(filtered, now);
-        
-        const container = document.getElementById('list-container');
-        container.innerHTML = '';
-        
-        // Render Trips first
-        trips.forEach(trip => {
-            const ids = trip.requests.map(r => r.id);
-            let countsHtml = '';
-            for (const [subtype, count] of Object.entries(trip.counts)) {
-                countsHtml += `<span class="chip">${count}x ${getIcon(subtype)}</span> `;
+    function subscribeRealtime() {
+      supabaseClient
+        .channel('crew-live-map')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, payload => {
+          if (payload.eventType === 'INSERT') requestsState.push(payload.new);
+          else if (payload.eventType === 'UPDATE') {
+            const index = requestsState.findIndex(r => r.id === payload.new.id);
+            if (index !== -1) {
+              if (payload.new.status === 'done') requestsState.splice(index, 1);
+              else requestsState[index] = payload.new;
             }
-            
-            const html = `
-                <div class="trip-card">
-                    <div class="trip-header">
-                        <span>Zone ${trip.zone} &bull; ${trip.rows}</span>
-                        <span>${trip.rationale}</span>
-                    </div>
-                    <div style="margin-bottom: 15px;">${countsHtml}</div>
-                    ${generateActionsHtml(ids, trip.requests[0].status)}
-                    <div style="margin-top: 15px; border-left: 2px solid var(--border); padding-left: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        ${trip.requests.map(r => generateRequestCard(r, now, true)).join('')}
-                    </div>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', html);
-        });
-
-        // Render Single Requests (sort by priority then time)
-        singleRequests.sort((a,b) => {
-            if (a.priority !== b.priority) return a.priority - b.priority;
-            return new Date(b.created_at) - new Date(a.created_at);
-        }).forEach(req => {
-            container.insertAdjacentHTML('beforeend', generateRequestCard(req, now, false));
-        });
+          }
+          render();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, payload => {
+          if (payload.eventType === 'INSERT') {
+            alertsState.push(payload.new);
+            playBeep();
+          } else if (payload.eventType === 'UPDATE') {
+            alertsState = alertsState.filter(a => !a.acknowledged);
+          }
+          render();
+        })
+        .subscribe();
     }
 
-    // --- Task C1: Individual Card Generation ---
-    function generateRequestCard(req, now, isInner = false) {
-        const waitMins = Math.floor((now - new Date(req.created_at).getTime()) / 60000);
-        const waitStr = waitMins === 0 ? 'Just now' : `${waitMins}m ago`;
-        
-        let actionsHtml = isInner ? '' : generateActionsHtml([req.id], req.status);
-        
-        return `
-            <div class="req-card priority-${req.priority} status-${req.status}" id="req-${req.id}">
-                <div class="req-top">
-                    <div>
-                        <span class="chip ${req.status}">${req.status.replace('_', ' ').toUpperCase()}</span>
-                        <span style="margin-left: 10px;">${req.priority === 1 ? '🚨 EMERGENCY' : req.priority === 2 ? '⚕️ MEDICAL' : ''}</span>
-                    </div>
-                    <div>${waitStr}</div>
-                </div>
-                <div style="display: flex; gap: 15px; align-items: center;">
-                    <div class="req-seat">${req.seat}</div>
-                    <div style="font-size: 40px; margin-right: 10px;">${getIcon(req.subtype)}</div>
-                    <div style="flex-grow: 1;">
-                        <div class="req-main">${req.text_ja}</div>
-                        <div class="req-sub">${req.text_en}</div>
-                        <div class="req-orig" id="orig-${req.id}">${req.lang.toUpperCase()}: ${req.text_original}</div>
-                    </div>
-                    <div>
-                        <button onclick="document.getElementById('orig-${req.id}').style.display = document.getElementById('orig-${req.id}').style.display === 'block' ? 'none' : 'block'">Show Original</button>
-                    </div>
-                </div>
-                ${actionsHtml}
-            </div>
+    async function updateTripStatus(reqIds, newStatus, replyKey) {
+      for (let id of reqIds) {
+        await supabaseClient.from('requests').update({ status: newStatus, reply_key: replyKey }).eq('id', id);
+      }
+    }
+
+    async function acknowledgeAlert(alertId) {
+      await supabaseClient.from('alerts').update({ acknowledged: true }).eq('id', alertId);
+      alertsState = alertsState.filter(a => a.id !== alertId);
+      render();
+    }
+
+    async function simulate10() {
+      const types = ['water', 'meal', 'blanket', 'restroom'];
+      const langs = ['en', 'ja', 'hi'];
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+      for (let i = 0; i < 10; i++) {
+        const row = Math.floor(Math.random() * 20) + 1;
+        const letter = letters[Math.floor(Math.random() * letters.length)];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const lang = langs[Math.floor(Math.random() * langs.length)];
+        const zone = Math.ceil(row / 4);
+
+        await supabaseClient.from('requests').insert([{ seat_row: row, seat_letter: letter, zone: zone, type: type, language: lang, status: 'waiting' }]);
+        await new Promise(r => setTimeout(r, 150));
+      }
+    }
+
+    async function resetDemo() {
+      if (!confirm('Clear all demo requests and alerts?')) return;
+      await supabaseClient.from('requests').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabaseClient.from('alerts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      requestsState = [];
+      alertsState = [];
+      render();
+    }
+
+    function render() {
+      // 1. Render Alerts
+      const alertContainer = document.getElementById('alert-container');
+      alertContainer.innerHTML = '';
+      alertsState.forEach(alt => {
+        const div = document.createElement('div');
+        div.className = 'alert-banner';
+        div.innerHTML = `
+          <span>🚨 EMERGENCY: Seat ${alt.seat_row}${alt.seat_letter} - ${alt.kind.toUpperCase()}!</span>
+          <button class="btn-action" style="background:white; color:var(--jal-red);" onclick="acknowledgeAlert('${alt.id}')">Acknowledge</button>
         `;
-    }
+        alertContainer.appendChild(div);
+      });
 
-    // --- Task C3: Actions ---
-    function generateActionsHtml(ids, currentStatus) {
-        const idListStr = JSON.stringify(ids).replace(/"/g, '&quot;');
+      // 2. Render Visual Cabin Seat Map (Rows 1 to 20 for clean fit)
+      const mapContainer = document.getElementById('cabin-map');
+      mapContainer.innerHTML = '';
+      
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+      for (let r = 1; r <= 20; r++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'seat-row-display';
         
-        let repliesHtml = '';
-        if (currentStatus !== 'done' && currentStatus !== 'cannot_fulfil') {
-            repliesHtml = PACK.replies.map(rep => {
-                const isAlternative = rep.id === 'alternative';
-                const action = isAlternative ? 'cannot_fulfil' : 'done';
-                return `<button onclick="updateRequests(${idListStr}, '${action}', '${rep.id}')">${rep.icon} ${rep.text.ja}</button>`;
-            }).join('');
-        }
+        const label = document.createElement('span');
+        label.style.width = '50px';
+        label.style.fontWeight = 'bold';
+        label.innerText = `Row ${r}:`;
+        rowDiv.appendChild(label);
 
-        return `
-            <div class="actions">
-                ${currentStatus === 'new' ? `<button class="btn-primary" onclick="updateRequests(${idListStr}, 'acknowledged', null)">Accept</button>` : ''}
-                ${currentStatus !== 'done' ? `<button onclick="updateRequests(${idListStr}, 'on_the_way', null)">On the way</button>` : ''}
-                ${currentStatus !== 'done' ? `<button onclick="updateRequests(${idListStr}, 'done', null)">Mark Done</button>` : ''}
-                ${repliesHtml}
-            </div>
+        letters.forEach((lettr, idx) => {
+          // Check if seat has request or alert
+          const req = requestsState.find(q => q.seat_row === r && q.seat_letter === lettr);
+          const alt = alertsState.find(a => a.seat_row === r && a.seat_letter === lettr);
+
+          const seat = document.createElement('div');
+          seat.className = 'seat-box';
+          seat.innerText = lettr;
+
+          if (alt) {
+            seat.classList.add('sos');
+            seat.title = `Emergency: ${alt.kind}`;
+          } else if (req) {
+            if (req.status === 'on_the_way') seat.classList.add('active');
+            else seat.classList.add('waiting');
+            seat.title = `${req.type} (${req.status})`;
+          }
+
+          rowDiv.appendChild(seat);
+
+          // Add aisle space between C and D
+          if (idx === 2) {
+            const aisle = document.createElement('div');
+            aisle.style.width = '20px';
+            rowDiv.appendChild(aisle);
+          }
+        });
+        mapContainer.appendChild(rowDiv);
+      }
+
+      // 3. Render Batched Trips
+      const waitingReqs = requestsState.filter(r => r.status === 'waiting');
+      const list = document.getElementById('trips-list');
+      list.innerHTML = '';
+
+      if (waitingReqs.length === 0 && requestsState.length === 0 && alertsState.length === 0) {
+        list.innerHTML = '<p style="color: #64748b;">No active requests. Click "Simulate 10 Passengers" to test the seat map!</p>';
+        return;
+      }
+
+      const zonesMap = {};
+      waitingReqs.forEach(req => {
+        if (!zonesMap[req.zone]) zonesMap[req.zone] = [];
+        zonesMap[req.zone].push(req);
+      });
+
+      Object.keys(zonesMap).sort().forEach(zoneNum => {
+        const group = zonesMap[zoneNum];
+        const counts = {};
+        const reqIds = [];
+        let minRow = 99, maxRow = 0, oldestTime = new Date();
+
+        group.forEach(r => {
+          counts[r.type] = (counts[r.type] || 0) + 1;
+          reqIds.push(r.id);
+          if (r.seat_row < minRow) minRow = r.seat_row;
+          if (r.seat_row > maxRow) maxRow = r.seat_row;
+          if (new Date(r.created_at) < oldestTime) oldestTime = new Date(r.created_at);
+        });
+
+        const waitMin = Math.floor((new Date() - oldestTime) / 60000);
+        const countString = Object.entries(counts).map(([t, c]) => `${t.toUpperCase()} x${c}`).join(' · ');
+
+        const card = document.createElement('div');
+        card.className = 'trip-card';
+        card.innerHTML = `
+          <div>
+            <strong>Trip · Zone ${zoneNum} (Rows ${minRow}-${maxRow})</strong><br>
+            <span style="font-size: 1.1rem; color: var(--jal-red); font-weight: bold;">${countString}</span><br>
+            <small style="color: #64748b;">Reason: Same zone, oldest waiting ${waitMin} min</small>
+          </div>
+          <div>
+            <button class="btn-action" onclick='updateTripStatus(${JSON.stringify(reqIds)}, "on_the_way", "on_my_way")'>On my way</button>
+            <button class="btn-action" style="background:#16a34a;" onclick='updateTripStatus(${JSON.stringify(reqIds)}, "done", "done")'>Done</button>
+          </div>
         `;
+        list.appendChild(card);
+      });
     }
 
-    async function updateRequests(ids, status, replyId) {
-        if (!db) return;
-        const payload = { status };
-        if (replyId) payload.reply_id = replyId;
-        await db.from('requests').update(payload).in('id', ids);
-    }
-
-    // --- Task C6: Mini Seat Map ---
-    function buildSeatmap() {
-        const c = document.getElementById('seatmap');
-        let html = '';
-        for (let row = 1; row <= 20; row++) {
-            html += `<div class="row-grid"><div class="row-num">${row}</div>`;
-            ['A','B','C','aisle','D','E','F'].forEach(l => {
-                if (l === 'aisle') { html += `<div class="seat aisle"></div>`; }
-                else { html += `<div class="seat" id="seat-${row}${l}" onclick="toggleSeatFilter('${row}${l}')">${l}</div>`; }
-            });
-            html += `</div>`;
-        }
-        c.innerHTML = html;
-    }
-
-    function toggleSeatFilter(seat) {
-        if (seatFilter === seat) { seatFilter = null; document.getElementById('filter-status').innerText = 'Viewing all seats'; }
-        else { seatFilter = seat; document.getElementById('filter-status').innerText = `Filtering by Seat: ${seat}`; }
-        renderMain();
-    }
-
-    function renderSeatmap() {
-        document.querySelectorAll('.seat').forEach(el => {
-            el.className = 'seat';
-            if (el.id === `seat-${seatFilter}`) el.classList.add('selected');
-        });
-        
-        // Find pending
-        requests.filter(r => r.status === 'new').forEach(r => {
-            const el = document.getElementById(`seat-${r.seat}`);
-            if (el) el.classList.add(r.priority <= 2 ? 'emergency' : 'pending');
-        });
-    }
-
-    // --- Task C5: Announce & Mocking ---
-    function toggleAnnounce() {
-        document.getElementById('announce-panel').classList.toggle('open');
-    }
-
-    function buildAnnouncePanel() {
-        const c = document.getElementById('announce-list');
-        c.innerHTML = PACK.safety.map(s => `
-            <button class="safety-btn" onclick="triggerAnnounce('${s.id}')">
-                <span style="font-size: 24px;">${s.icon}</span> 
-                <div>
-                    <div style="font-weight: bold;">${s.text.ja}</div>
-                    <div style="font-size: 14px; color: var(--text-muted);">${s.text.en}</div>
-                </div>
-            </button>
-        `).join('');
-    }
-
-    async function triggerAnnounce(phraseId) {
-        if (!db) return;
-        await db.from('announcements').insert([{ phrase_id: phraseId, flight: 'JL-DEMO' }]);
-        toggleAnnounce();
-        alert('Announcement sent to cabin screens.');
-    }
-
-    async function simulatePassengers() {
-        if (!db) return;
-        const routineIds = ['water', 'tea_coffee', 'blanket', 'pillow', 'veg_meal'];
-        const langs = ['hi', 'pa', 'ta', 'en'];
-        const mockRows = [];
-        for (let i=0; i<10; i++) {
-            const row = Math.floor(Math.random() * 18) + 5; // 5 to 22
-            const letter = ['A','B','C','D','E','F'][Math.floor(Math.random() * 6)];
-            const subtypeId = routineIds[Math.floor(Math.random() * routineIds.length)];
-            const lang = langs[Math.floor(Math.random() * langs.length)];
-            const pdata = PACK.requests.find(r => r.id === subtypeId);
-            
-            mockRows.push({
-                flight: 'JL-DEMO', seat: `${row}${letter}`, row_num: row, seat_letter: letter, zone: Math.floor((row-1)/4)+1,
-                category: 'routine', subtype: subtypeId, priority: 3, status: 'new',
-                lang: lang, text_original: 'Mocked request', text_ja: pdata.text.ja, text_en: pdata.text.en
-            });
-        }
-        await db.from('requests').insert(mockRows);
-    }
-
-    async function clearData() {
-        if (!db || !confirm("Delete ALL demo requests?")) return;
-        await db.from('requests').delete().eq('flight', 'JL-DEMO');
-        requests = [];
-        renderMain();
-    }
-
-    init();
-</script>
+    window.onload = initCrew;
+  </script>
 </body>
 </html>
