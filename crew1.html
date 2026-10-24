@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JAL SkyBridge - Crew Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .alert-banner {
+      background: var(--jal-red);
+      color: white;
+      padding: 12px 20px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .trip-card {
+      background: white;
+      border: 1px solid var(--jal-gray);
+      border-left: 6px solid var(--jal-navy);
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-action {
+      background: var(--jal-navy);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .btn-action:hover { opacity: 0.9; }
+    .demo-controls {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>JAL SkyBridge - Crew Dashboard</h1>
+    <div>
+      <button class="btn-action" onclick="audioUnlock()" style="background:#0284c7;">🔊 Start Shift (Audio)</button>
+      <span id="connection-status">Live Connected</span>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Demo Controls for Judges -->
+    <div class="demo-controls">
+      <button class="btn-action" style="background:#9333ea;" onclick="simulate10()">⚡ Simulate 10 Passengers</button>
+      <button class="btn-action" style="background:#dc2626;" onclick="resetDemo()">🗑️ Reset Demo</button>
+    </div>
+
+    <!-- SOS / Emergency Alert Bar -->
+    <div id="alert-container"></div>
+
+    <h2>Batched Cabin Trips (Zone-wise)</h2>
+    <div id="trips-list">
+      <p style="color: #64748b;">Waiting for requests...</p>
+    </div>
+  </div>
+
+  <script src="phrases.js"></script>
+  <script src="config.js"></script>
+  <script>
+    let requestsState = [];
+    let alertsState = [];
+    let audioCtx = null;
+
+    function audioUnlock() {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      alert('Audio unlocked for alert beeps!');
+    }
+
+    function playBeep() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = 800;
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    }
+
+    async function initCrew() {
+      await fetchInitialData();
+      subscribeRealtime();
+    }
+
+    async function fetchInitialData() {
+      const { data: reqs } = await supabaseClient
+        .from('requests')
+        .select('*')
+        .neq('status', 'done')
+        .order('created_at', { ascending: true });
+
+      if (reqs) requestsState = reqs;
+
+      const { data: alts } = await supabaseClient
+        .from('alerts')
+        .select('*')
+        .eq('acknowledged', false)
+        .order('created_at', { ascending: true });
+
+      if (alts) alertsState = alts;
+
+      render();
+    }
+
+    function subscribeRealtime() {
+      supabaseClient
+        .channel('crew-live-batch')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, payload => {
+          if (payload.eventType === 'INSERT') {
+            requestsState.push(payload.new);
+          } else if (payload.eventType === 'UPDATE') {
+            const index = requestsState.findIndex(r => r.id === payload.new.id);
+            if (index !== -1) {
+              if (payload.new.status === 'done') {
+                requestsState.splice(index, 1);
+              } else {
+                requestsState[index] = payload.new;
+              }
+            }
+          }
+          render();
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alerts' }, payload => {
+          alertsState.push(payload.new);
+          playBeep();
+          render();
+        })
+        .subscribe();
+    }
+
+    async function updateTripStatus(reqIds, newStatus, replyKey) {
+      for (let id of reqIds) {
+        await supabaseClient
+          .from('requests')
+          .update({ status: newStatus, reply_key: replyKey })
+          .eq('id', id);
+      }
+    }
+
+    async function acknowledgeAlert(alertId) {
+      await supabaseClient
+        .from('alerts')
+        .update({ acknowledged: true })
+        .eq('id', alertId);
+      alertsState = alertsState.filter(a => a.id !== alertId);
+      render();
+    }
+
+    // Simulate 10 random requests across zones
+    async function simulate10() {
+      const types = ['water', 'meal', 'blanket', 'restroom'];
+      const langs = ['en', 'ja', 'hi'];
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+      for (let i = 0; i < 10; i++) {
+        const row = Math.floor(Math.random() * 28) + 1;
+        const letter = letters[Math.floor(Math.random() * letters.length)];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const lang = langs[Math.floor(Math.random() * langs.length)];
+        const zone = Math.ceil(row / 4);
+
+        await supabaseClient.from('requests').insert([{
+          seat_row: row,
+          seat_letter: letter,
+          zone: zone,
+          type: type,
+          language: lang,
+          status: 'waiting'
+        }]);
+        await new Promise(r => setTimeout(r, 150)); // small staggered delay
+      }
+    }
+
+    async function resetDemo() {
+      if (!confirm('Clear all demo requests and alerts?')) return;
+      await supabaseClient.from('requests').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabaseClient.from('alerts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      requestsState = [];
+      alertsState = [];
+      render();
+    }
+
+    function render() {
+      // 1. Render Alerts
+      const alertContainer = document.getElementById('alert-container');
+      alertContainer.innerHTML = '';
+      alertsState.forEach(alt => {
+        const div = document.createElement('div');
+        div.className = 'alert-banner';
+        div.innerHTML = `
+          <span>🚨 EMERGENCY: Seat ${alt.seat_row}${alt.seat_letter} - ${alt.kind.toUpperCase()}!</span>
+          <button class="btn-action" style="background:white; color:var(--jal-red);" onclick="acknowledgeAlert('${alt.id}')">Acknowledge</button>
+        `;
+        alertContainer.appendChild(div);
+      });
+
+      // 2. Batching Engine: Group waiting requests by Zone
+      const waitingReqs = requestsState.filter(r => r.status === 'waiting');
+      const list = document.getElementById('trips-list');
+      list.innerHTML = '';
+
+      if (waitingReqs.length === 0 && requestsState.length === 0) {
+        list.innerHTML = '<p style="color: #64748b;">No active requests. Click "Simulate 10 Passengers" to test!</p>';
+        return;
+      }
+
+      // Group by zone
+      const zonesMap = {};
+      waitingReqs.forEach(req => {
+        if (!zonesMap[req.zone]) zonesMap[req.zone] = [];
+        zonesMap[req.zone].push(req);
+      });
+
+      Object.keys(zonesMap).sort().forEach(zoneNum => {
+        const group = zonesMap[zoneNum];
+        
+        // Count request types
+        const counts = {};
+        const reqIds = [];
+        let minRow = 99, maxRow = 0;
+        let oldestTime = new Date();
+
+        group.forEach(r => {
+          counts[r.type] = (counts[r.type] || 0) + 1;
+          reqIds.push(r.id);
+          if (r.seat_row < minRow) minRow = r.seat_row;
+          if (r.seat_row > maxRow) maxRow = r.seat_row;
+          if (new Date(r.created_at) < oldestTime) oldestTime = new Date(r.created_at);
+        });
+
+        const waitMin = Math.floor((new Date() - oldestTime) / 60000);
+        const countString = Object.entries(counts).map(([t, c]) => `${t.toUpperCase()} x${c}`).join(' · ');
+
+        const card = document.createElement('div');
+        card.className = 'trip-card';
+        card.innerHTML = `
+          <div>
+            <strong>Trip · Zone ${zoneNum} (Rows ${minRow}-${maxRow})</strong><br>
+            <span style="font-size: 1.1rem; color: var(--jal-red); font-weight: bold;">${countString}</span><br>
+            <small style="color: #64748b;">Reason: Same zone, oldest waiting ${waitMin} min</small>
+          </div>
+          <div>
+            <button class="btn-action" onclick='updateTripStatus(${JSON.stringify(reqIds)}, "on_the_way", "on_my_way")'>On my way</button>
+            <button class="btn-action" style="background:#16a34a;" onclick='updateTripStatus(${JSON.stringify(reqIds)}, "done", "done")'>Done</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    window.onload = initCrew;
+  </script>
+</body>
+</html>
