@@ -7,18 +7,19 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="phrasepacks.js"></script>
     <style>
+        /* JAL Premium Corporate Theme */
         :root {
             --jal-red: #CC0000;
-            --jal-dark: #0F172A;
-            --jal-gray: #64748B;
-            --jal-light-gray: #F8FAFC;
+            --jal-dark: #1A1A1A;
+            --jal-gray: #555555;
+            --jal-light-gray: #F4F5F7;
             --jal-white: #FFFFFF;
-            --jal-border: #E2E8F0;
+            --jal-border: #E0E4E8;
             --base-text: 18px;
             --label-text: 24px;
             --title-text: 32px;
-            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         body.large {
@@ -28,7 +29,7 @@
         }
 
         body {
-            font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Noto Sans', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--jal-light-gray);
             color: var(--jal-dark);
             font-size: var(--base-text);
@@ -40,13 +41,20 @@
 
         :focus-visible {
             outline: 3px solid var(--jal-red);
-            outline-offset: 3px;
+            outline-offset: 2px;
         }
 
-        h1, h2, h3 { margin: 0; font-weight: 700; }
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; animation: none !important; }
+        }
+
+        h1, h2, h3 {
+            margin: 0;
+            font-weight: 600;
+        }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -56,14 +64,14 @@
             padding: 30px 40px;
             max-width: 1200px;
             margin: 0 auto;
-            animation: fadeIn 0.35s ease forwards;
+            animation: fadeIn 0.4s ease forwards;
         }
         .screen.active { display: block; }
 
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(10px);
+            background: rgba(26, 26, 26, 0.85);
+            backdrop-filter: blur(8px);
             z-index: 2000;
             display: flex; justify-content: center; align-items: center;
             padding: 20px; box-sizing: border-box;
@@ -72,11 +80,11 @@
 
         .top-bar {
             background: var(--jal-white);
-            padding: 16px 32px;
+            padding: 15px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
             border-bottom: 1px solid var(--jal-border);
             position: sticky;
             top: 0;
@@ -92,17 +100,16 @@
         .jal-logo {
             font-family: serif;
             color: var(--jal-red);
-            font-size: 26px;
-            font-weight: 800;
+            font-size: 28px;
+            font-weight: bold;
             letter-spacing: 2px;
         }
 
         .flight-info {
-            font-size: 15px;
+            font-size: 14px;
             color: var(--jal-gray);
-            border-left: 2px solid var(--jal-border);
+            border-left: 1px solid var(--jal-border);
             padding-left: 20px;
-            font-weight: 500;
         }
 
         .controls-section {
@@ -111,50 +118,28 @@
             gap: 15px;
         }
 
-        /* Professional Language Selector Dropdown */
-        .lang-select-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-
-        .lang-dropdown {
-            background: var(--jal-light-gray);
-            border: 1px solid var(--jal-border);
-            color: var(--jal-dark);
-            padding: 10px 16px;
-            font-size: 16px;
-            font-weight: 600;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .lang-dropdown:hover {
-            border-color: var(--jal-red);
-        }
-
         button {
             font-family: inherit;
             font-size: var(--base-text);
-            border-radius: 12px;
+            border-radius: 8px;
             border: 1px solid var(--jal-border);
             background-color: var(--jal-white);
             color: var(--jal-dark);
             cursor: pointer;
-            padding: 14px 24px;
+            padding: 12px 24px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            gap: 12px;
+            gap: 10px;
             transition: var(--transition);
             box-shadow: var(--shadow);
         }
 
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 15px 30px -5px rgba(0,0,0,0.08);
-            border-color: #cbd5e1;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+            border-color: #ccc;
         }
 
         button:active { transform: translateY(0); }
@@ -165,13 +150,13 @@
             border: none;
         }
 
-        button.primary:hover { background-color: #1e293b; }
+        button.primary:hover { background-color: #333; }
         
         button.danger {
-            background-color: #FEF2F2;
+            background-color: var(--jal-white);
             color: var(--jal-red);
-            border: 2px solid #FCA5A5;
-            font-weight: 700;
+            border: 2px solid var(--jal-red);
+            font-weight: 600;
             position: relative;
             overflow: hidden;
             user-select: none;
@@ -183,13 +168,29 @@
             position: absolute;
             left: 0; top: 0; height: 100%; width: 0%;
             background-color: var(--jal-red);
-            opacity: 0.2;
+            opacity: 0.15;
             transition: width 1s linear;
         }
 
-        .page-header { margin-bottom: 30px; }
-        .page-header h1 { font-size: var(--title-text); color: var(--jal-dark); }
-        .page-header p { color: var(--jal-gray); margin: 6px 0 0 0; font-size: var(--base-text); }
+        .lang-bar { display: flex; gap: 8px; background: var(--jal-light-gray); padding: 4px; border-radius: 10px; }
+        .lang-bar button { 
+            min-height: 40px; padding: 8px 16px; border: none; box-shadow: none; background: transparent; font-size: 14px; font-weight: 600; color: var(--jal-gray);
+        }
+        .lang-bar button.active { background-color: var(--jal-white); color: var(--jal-red); box-shadow: var(--shadow); }
+        .lang-bar button:hover { transform: none; color: var(--jal-dark); }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+        .page-header h1 {
+            font-size: var(--title-text);
+            color: var(--jal-dark);
+        }
+        .page-header p {
+            color: var(--jal-gray);
+            margin: 5px 0 0 0;
+            font-size: var(--base-text);
+        }
 
         .home-container { display: flex; gap: 30px; align-items: flex-start; }
 
@@ -202,76 +203,78 @@
 
         .tile {
             background: var(--jal-white);
-            min-height: 150px;
+            min-height: 140px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            text-align: center;
             gap: 12px;
-            padding: 24px;
+            padding: 20px;
             border: 1px solid var(--jal-border);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
+            border-radius: 12px;
         }
-        .tile .icon { font-size: 38px; }
-        .tile .main-label { font-size: var(--base-text); font-weight: 700; color: var(--jal-dark); }
-        .tile .sub-label { font-size: 14px; color: var(--jal-gray); }
+        .tile .icon { font-size: 32px; }
+        .tile .main-label { font-size: var(--base-text); font-weight: 600; color: var(--jal-dark); }
+        .tile .sub-label { font-size: 13px; color: var(--jal-gray); }
 
         .side-buttons {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            min-width: 300px;
+            gap: 15px;
+            min-width: 280px;
             background: var(--jal-white);
-            padding: 28px;
-            border-radius: 16px;
+            padding: 24px;
+            border-radius: 12px;
             border: 1px solid var(--jal-border);
             box-shadow: var(--shadow);
         }
         .side-buttons button { width: 100%; justify-content: flex-start; padding-left: 20px; }
-        .side-buttons button .icon { margin-right: 12px; font-size: 22px; }
+        .side-buttons button .icon { margin-right: 10px; font-size: 20px; }
 
         #btn-a-plus {
-            border-radius: 50%; width: 48px; height: 48px; padding: 0;
-            font-weight: 700; background: var(--jal-light-gray); color: var(--jal-dark); border: 1px solid var(--jal-border); font-size: 18px;
+            border-radius: 50%; width: 44px; height: 44px; padding: 0;
+            font-weight: bold; background: var(--jal-light-gray); color: var(--jal-dark); border: none; font-size: 16px;
         }
+
+        #btn-debug { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
 
         .placeholder-card {
             background: var(--jal-white);
-            border-radius: 20px;
-            padding: 48px;
-            max-width: 650px;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 600px;
             margin: 40px auto;
             text-align: center;
-            box-shadow: var(--shadow);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             border: 1px solid var(--jal-border);
         }
 
+        #confirm-sentence { font-size: var(--label-text); margin: 20px 0; font-weight: 600; color: var(--jal-dark); }
+        #confirm-icon { font-size: 48px; margin-bottom: 10px; }
+
         .crew-card {
             background: var(--jal-white);
-            border-radius: 20px;
+            border-radius: 16px;
             padding: 60px 40px;
             text-align: center;
             position: relative;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
             width: 100%; max-width: 800px;
             min-height: 60vh;
         }
-        .crew-card .ja-text { font-size: 52px; font-weight: 800; color: var(--jal-dark); margin-bottom: 20px; }
-        .crew-card .en-text { font-size: 26px; color: var(--jal-gray); margin-bottom: 40px; }
+        .crew-card .ja-text { font-size: 56px; font-weight: bold; color: var(--jal-dark); margin-bottom: 20px; }
+        .crew-card .en-text { font-size: 28px; color: var(--jal-gray); margin-bottom: 40px; }
         .crew-card .corner-seat { 
-            position: absolute; top: 30px; right: 40px; font-size: 22px; font-weight: 700; 
-            color: var(--jal-dark); background: var(--jal-light-gray); padding: 8px 18px; border-radius: 10px; border: 1px solid var(--jal-border);
+            position: absolute; top: 30px; right: 40px; font-size: 24px; font-weight: 600; 
+            color: var(--jal-dark); background: var(--jal-light-gray); padding: 8px 16px; border-radius: 8px; 
         }
 
         .voice-controls {
             background: var(--jal-light-gray);
-            padding: 16px 24px;
-            border-radius: 12px;
+            padding: 12px 20px;
+            border-radius: 8px;
             display: inline-flex;
             align-items: center;
             gap: 20px;
@@ -281,23 +284,25 @@
 
         @keyframes pulse {
             0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(204, 0, 0, 0.4); }
-            70% { transform: scale(1.1); opacity: 0.8; box-shadow: 0 0 0 20px rgba(204, 0, 0, 0); }
+            70% { transform: scale(1.1); opacity: 0.8; box-shadow: 0 0 0 15px rgba(204, 0, 0, 0); }
             100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(204, 0, 0, 0); }
         }
         .pulsing-dot {
-            width: 24px; height: 24px; background-color: var(--jal-red); border-radius: 50%;
+            width: 20px; height: 20px; background-color: var(--jal-red); border-radius: 50%;
             animation: pulse 1.5s infinite;
         }
 
         #status-badge {
-            display: none; background: #FEF3C7; color: #92400E; padding: 8px 16px; 
-            border-radius: 20px; font-size: 14px; font-weight: 700; margin-bottom: 20px;
+            display: none; background: #FFD700; color: #111; padding: 6px 14px; 
+            border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 20px;
         }
 
         @media (max-width: 900px) {
             .home-container { flex-direction: column; }
             .tiles-grid { grid-template-columns: repeat(2, 1fr); }
             .side-buttons { min-width: 100%; }
+            .crew-card .ja-text { font-size: 36px; }
+            .flight-info { display: none; }
         }
     </style>
 </head>
@@ -306,26 +311,26 @@
     <header class="top-bar">
         <div class="brand-section">
             <div class="jal-logo">JAL</div>
-            <div class="flight-info">Flight JL708 &nbsp;&bull;&nbsp; Tokyo (HND) &nbsp;&bull;&nbsp; <strong id="display-seat" aria-live="polite">Seat: 14C</strong></div>
+            <div class="flight-info">Flight JL708 &nbsp;&bull;&nbsp; Tokyo (HND) &nbsp;&bull;&nbsp; <strong id="display-seat" aria-live="polite">Seat: --</strong></div>
         </div>
         <div class="controls-section">
-            <div class="lang-select-wrapper">
-                <select id="lang-selector" class="lang-dropdown" onchange="setLanguage(this.value)" aria-label="Select Language"></select>
-            </div>
+            <div class="lang-bar" id="language-bar" aria-label="Language selection"></div>
             <button id="btn-a-plus" onclick="toggleLargeText()" aria-label="Increase text size">A+</button>
         </div>
     </header>
 
-    <div id="welcome" class="screen active" style="height: calc(100vh - 90px); display: flex; flex-direction: column; justify-content: center; align-items: center;">
-        <div class="jal-logo" style="font-size: 42px; margin-bottom: 10px;">JAPAN AIRLINES</div>
-        <h2 style="font-weight: 400; color: var(--jal-gray); margin-bottom: 40px;">SkyBridge Inflight Assistant / スカイブリッジへようこそ</h2>
-        <button class="primary" onclick="show('home')" style="font-size: 20px; padding: 18px 45px; border-radius: 35px;">Tap to Begin</button>
+    <button id="btn-debug" class="danger" onclick="testAnnouncement()">Test Caption</button>
+
+    <div id="welcome" class="screen active" tabindex="-1" style="height: calc(100vh - 80px); display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <div class="welcome-logo">JAPAN AIRLINES</div>
+        <h2 style="font-weight: 400; color: var(--jal-gray); margin-bottom: 40px;">Welcome to SkyBridge / スカイブリッジへようこそ</h2>
+        <button class="primary" onclick="show('home')" style="font-size: 20px; padding: 15px 40px; border-radius: 30px;">Tap to Begin</button>
     </div>
 
-    <div id="home" class="screen">
+    <div id="home" class="screen" tabindex="-1">
         <div class="page-header">
             <h1 id="title-what-need">How may we assist you today?</h1>
-            <p>Select a service tile or use hands-free voice command.</p>
+            <p>Select an option below or use your voice.</p>
         </div>
         
         <main class="home-container">
@@ -335,66 +340,62 @@
                 <button id="btn-voice" class="primary"
                     onmousedown="startVoice(event)" onmouseup="stopVoice(event)" 
                     ontouchstart="startVoice(event)" ontouchend="stopVoice(event)">
-                    <span class="icon">🎙️</span> <span class="txt-hold-to-speak">Hold to Speak</span>
+                    <span class="icon">🎙️</span> <span class="txt-hold-to-speak">Hold to speak</span>
                 </button>
 
-                <!-- HANDS-FREE WAKE WORD TOGGLE -->
-                <div style="padding: 12px 0; border-top: 1px solid var(--jal-border); margin-top: 5px;">
-                    <label style="font-size: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--jal-dark); font-weight: 700;">
-                        <input type="checkbox" id="hands-free-toggle" onchange="toggleHandsFree(this.checked)" style="width: 20px; height: 20px; accent-color: var(--jal-red);"> 
+                <div style="padding: 10px 0; border-top: 1px solid var(--jal-border); margin-top: 10px;">
+                    <label style="font-size: 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--jal-dark); font-weight: bold;">
+                        <input type="checkbox" id="hands-free-toggle" onchange="toggleHandsFree(this.checked)" style="width: 18px; height: 18px;"> 
                         <span>Hands-Free Mode</span>
                     </label>
-                    <div style="font-size: 13px; color: var(--jal-gray); margin-top: 6px; padding-left: 32px;">
-                        Wake word: <strong style="color: var(--jal-red);">"Hey <span id="wake-word-seat">14C</span>"</strong>
+                    <div style="font-size: 13px; color: var(--jal-gray); margin-top: 4px; padding-left: 28px;">
+                        Wake word: <strong style="color: var(--jal-red);">"Hey <span id="wake-word-seat">--</span>"</strong>
                     </div>
                 </div>
                 
-                <button id="btn-show-crew" onclick="startShowCrew()" style="margin-top: 5px;">
-                    <span class="icon">📱</span> Show to Crew
+                <button id="btn-show-crew" onclick="startShowCrew()" style="margin-top: 10px;">
+                    <span class="icon">📱</span> Show this to the crew
                 </button>
 
                 <button id="btn-safety-history" onclick="showHistory()">
                     <span class="icon">🔔</span> <span class="txt-safety-history">Safety Messages</span>
                 </button>
                 
-                <div style="padding: 12px 0; border-top: 1px solid var(--jal-border); margin-top: 5px;">
-                    <label style="font-size: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--jal-gray);">
-                        <input type="checkbox" id="auto-read-toggle" onchange="state.autoReadSafety = this.checked" style="width: 20px; height: 20px; accent-color: var(--jal-red);"> 
-                        <span class="txt-auto-read">Auto-read safety alerts</span>
+                <div style="padding: 10px 0; border-top: 1px solid var(--jal-border); margin-top: 10px;">
+                    <label style="font-size: 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--jal-gray);">
+                        <input type="checkbox" id="auto-read-toggle" onchange="state.autoReadSafety = this.checked" style="width: 18px; height: 18px;"> 
+                        <span class="txt-auto-read">Auto-read safety messages</span>
                     </label>
                 </div>
 
                 <button id="btn-sos" class="danger" aria-label="Emergency SOS"
-                    onpointerdown="startSOS()" onpointerup="cancelSOS()" onpointerleave="cancelSOS()" onpointercancel="cancelSOS()" style="margin-top: 5px;">
+                    onpointerdown="startSOS()" onpointerup="cancelSOS()" onpointerleave="cancelSOS()" onpointercancel="cancelSOS()" style="margin-top: 10px;">
                     <div id="sos-progress" aria-hidden="true"></div>
-                    <span class="icon" style="position: relative; z-index: 1;">🚨</span> 
+                    <span class="icon" style="position: relative; z-index: 1;">⚠️</span> 
                     <span id="sos-text" style="position: relative; z-index: 1;">Emergency SOS</span>
                 </button>
             </aside>
         </main>
     </div>
 
-    <!-- Live Safety Caption Overlay -->
     <div id="safety-overlay" class="overlay hidden" onclick="closeSafetyCaption()">
-        <div class="crew-card" style="background: var(--jal-red); color: var(--jal-white); cursor: pointer;" role="alert">
+        <div class="crew-card" style="background: var(--jal-red); color: var(--jal-white); cursor: pointer; min-height: 40vh;" role="alert" aria-live="assertive">
             <div id="safety-overlay-icon" style="font-size: 64px; margin-bottom: 20px;" aria-hidden="true">⚠️</div>
-            <div id="safety-overlay-main" class="ja-text" style="color: var(--jal-white); font-size: 42px;">...</div>
-            <div id="safety-overlay-en" class="en-text" style="color: rgba(255,255,255,0.9); font-size: 22px;">...</div>
-            <p style="font-size: 16px; opacity: 0.8; margin-top: 20px;">(Tap anywhere to close)</p>
+            <div id="safety-overlay-main" class="ja-text" style="color: var(--jal-white); font-size: 48px;">...</div>
+            <div id="safety-overlay-en" class="en-text" style="color: rgba(255,255,255,0.9); font-size: 24px;">...</div>
+            <p style="font-size: 18px; opacity: 0.8; margin-top: 30px;">(Tap anywhere to close)</p>
         </div>
     </div>
 
-    <!-- Safety History Screen -->
-    <div id="history" class="screen">
+    <div id="history" class="screen" tabindex="-1">
         <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h1 class="txt-safety-history">Safety Messages</h1>
             <button class="txt-back" onclick="show('home')">Back</button>
         </div>
-        <div id="history-list" style="display: flex; flex-direction: column; gap: 15px; max-width: 800px;"></div>
+        <div id="history-list" style="display: flex; flex-direction: column; gap: 15px; max-width: 800px;" role="list"></div>
     </div>
 
-    <!-- Confirm Screen -->
-    <div id="confirm" class="screen">
+    <div id="confirm" class="screen" tabindex="-1">
         <div class="placeholder-card">
             <div id="confirm-icon" aria-hidden="true">💧</div>
             <div id="confirm-sentence" role="heading" aria-level="2">Water, please</div>
@@ -408,50 +409,48 @@
             </div>
 
             <div style="display: flex; gap: 15px; justify-content: center;">
-                <button id="btn-confirm-send" class="primary txt-send" onclick="sendTapRequest()" style="min-width: 160px;">Send Request</button>
+                <button id="btn-confirm-send" class="primary txt-send" onclick="sendTapRequest()" style="min-width: 150px;">Send Request</button>
                 <button id="btn-confirm-back" class="txt-back" onclick="show('home')">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Voice Flow Screen -->
-    <div id="voice" class="screen">
+    <div id="voice" class="screen" tabindex="-1">
         <div class="placeholder-card" aria-live="polite">
             <div id="voice-state-listening">
-                <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 25px;">
+                <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 30px;">
                     <div class="pulsing-dot" aria-hidden="true"></div>
                     <h2 class="txt-listening" style="margin: 0; color: var(--jal-red);">Listening...</h2>
                 </div>
-                <div id="voice-heard-text" style="font-size: var(--label-text); font-weight: 500; min-height: 90px; color: var(--jal-dark);"></div>
+                <div id="voice-heard-text" style="font-size: var(--label-text); font-weight: 300; min-height: 80px; color: var(--jal-dark);"></div>
             </div>
 
             <div id="voice-state-understanding" style="display: none;">
-                <h2 class="txt-understanding" style="color: var(--jal-gray);">Processing your request...</h2>
+                <h2 class="txt-understanding" style="color: var(--jal-gray);">Understanding your request...</h2>
                 <div style="font-size: 40px; margin-top: 30px; animation: pulse 2s infinite;" aria-hidden="true">✈️</div>
             </div>
 
             <div id="voice-state-fallback" style="display: none;">
                 <p id="voice-error-msg" style="color: var(--jal-red); font-weight: 600; font-size: 18px; margin-bottom: 20px;" role="alert"></p>
-                <textarea id="voice-typed-input" rows="3" style="width: 100%; box-sizing: border-box; font-size: var(--base-text); padding: 15px; border-radius: 12px; border: 1px solid var(--jal-border); margin-bottom: 20px; font-family: inherit; resize: none;"></textarea>
+                <textarea id="voice-typed-input" rows="3" aria-label="Type your request" style="width: 100%; box-sizing: border-box; font-size: var(--base-text); padding: 15px; border-radius: 8px; border: 1px solid var(--jal-border); margin-bottom: 20px; font-family: inherit; resize: none;"></textarea>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <button class="primary txt-send" onclick="submitTypedVoice()">Submit Request</button>
-                    <button class="txt-use-cards" onclick="show('home')">Return Home</button>
+                    <button class="primary txt-send" onclick="submitTypedVoice()">Submit Typed Request</button>
+                    <button class="txt-use-cards" onclick="show('home')">Return to Picture Cards</button>
                 </div>
             </div>
 
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--jal-border);">
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--jal-border);">
                 <button class="txt-back" onclick="cancelVoiceFlow()">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Voice Confirm-Back Screen -->
-    <div id="voice-confirm" class="screen">
+    <div id="voice-confirm" class="screen" tabindex="-1">
         <div class="placeholder-card">
             <h2 class="txt-did-you-mean" style="color: var(--jal-gray); font-weight: 400; font-size: 20px; margin-bottom: 10px;">Did you mean?</h2>
-            <div id="voice-warning" style="display: none; color: var(--jal-red); font-weight: 600; font-size: 14px; margin-bottom: 15px;">Low confidence: Please check carefully</div>
+            <div id="voice-warning" style="display: none; color: var(--jal-red); font-weight: 600; font-size: 14px; margin-bottom: 15px;" class="txt-check-carefully" role="alert">Low confidence: Please check carefully</div>
             
-            <div id="voice-confirm-main" style="font-size: var(--title-text); font-weight: 700; margin-bottom: 10px; color: var(--jal-dark);"></div>
+            <div id="voice-confirm-main" style="font-size: var(--title-text); font-weight: 600; margin-bottom: 10px; color: var(--jal-dark);"></div>
             <div id="voice-confirm-ja" style="font-size: var(--base-text); color: var(--jal-gray); margin-bottom: 40px;"></div>
             
             <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
@@ -461,8 +460,7 @@
         </div>
     </div>
 
-    <!-- Status Screen -->
-    <div id="status" class="screen">
+    <div id="status" class="screen" tabindex="-1">
         <div class="placeholder-card" role="status" aria-live="polite">
             <h2 id="status-title" style="margin-bottom: 20px;">Request Status</h2>
             <div id="status-badge" class="txt-pending">Pending Connection...</div>
@@ -477,17 +475,15 @@
         </div>
     </div>
 
-    <!-- Crew Picker Screen -->
-    <div id="crew-picker" class="screen">
+    <div id="crew-picker" class="screen" tabindex="-1">
         <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h1 id="title-crew-picker">Select a request to display</h1>
             <button class="txt-back" onclick="show('home')">Cancel</button>
         </div>
-        <section class="tiles-grid" id="picker-tiles-grid"></section>
+        <section class="tiles-grid" id="picker-tiles-grid" aria-label="Available requests"></section>
     </div>
 
-    <!-- Show to Crew Card -->
-    <div id="showcrew" class="screen">
+    <div id="showcrew" class="screen" tabindex="-1">
         <div class="crew-card">
             <div class="corner-seat" id="showcrew-seat">14C</div>
             <div class="ja-text" id="showcrew-ja">お水をお願いします</div>
@@ -498,9 +494,8 @@
         </div>
     </div>
 
-    <!-- SOS Screen -->
-    <div id="sos" class="screen">
-        <div class="placeholder-card" style="border: 2px solid var(--jal-red); background: #FEF2F2;">
+    <div id="sos" class="screen" tabindex="-1">
+        <div class="placeholder-card" style="border: 3px solid var(--jal-red); background: #FFF5F5;">
             <div style="font-size: 64px; margin-bottom: 20px;">🚨</div>
             <h2 style="color: var(--jal-red); font-size: var(--title-text); margin-bottom: 20px;">Emergency SOS Triggered</h2>
             <p style="color: var(--jal-dark); margin-bottom: 40px;">The cabin crew and Chief Purser have been notified immediately.</p>
@@ -517,8 +512,13 @@
             db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
+        const ENABLED_LANGS = ['en', 'ja', 'hi', 'pa'];
+        
         const UI_TEXT = {
-            en: { what_do_you_need: "How may we assist you today?", more: "More Options", send: "Send Request", back: "Cancel", hold_to_speak: "Hold to Speak", show_crew: "Show to Crew", sos: "Emergency SOS", seat: "Seat", read_aloud: "Listen", slower: "Slower", select_request: "Select a request", done: "Close Screen", no_voice: "Voice unavailable on this device.", safety_history: "Safety Messages", auto_read: "Auto-read safety alerts", no_history: "No safety messages.", listening: "Listening...", understanding: "Processing your request...", did_you_mean: "Did you mean?", yes_send: "Yes, Send", no_try_again: "No, Try Again", use_picture_cards: "Return Home", type_request: "Type your request here...", sent_title: "Request Sent", sent_desc: "Sent to cabin crew.", saved_title: "Saved Offline", saved_desc: "Will sync when online.", pending: "Pending...", status_acknowledged: "Crew has seen your request.", status_on_the_way: "Crew is on their way.", status_done: "Request completed." }
+            en: { what_do_you_need: "How may we assist you today?", more: "More Options", send: "Send Request", back: "Cancel", hold_to_speak: "Hold to speak", show_crew: "Show this to the crew", sos: "Emergency SOS", seat: "Seat", read_aloud: "Listen", slower: "Slower", select_request: "Select a request to display", done: "Close Screen", no_voice: "Sorry, this voice is not available on your device.", safety_history: "Safety Messages", auto_read: "Auto-read safety messages", no_history: "No safety messages issued.", listening: "Listening...", understanding: "Understanding your request...", did_you_mean: "Did you mean?", yes_send: "Yes, Send", no_try_again: "No, Try Again", check_carefully: "Low confidence: Please check carefully", use_picture_cards: "Return to Picture Cards", type_request: "Type your request here...", sent_title: "Request Sent", sent_desc: "Your request has been sent to the crew.", saved_title: "Saved Offline", saved_desc: "Saved. It will be sent automatically when the connection returns.", pending: "Pending Connection...", status_acknowledged: "The crew has seen your request.", status_on_the_way: "The crew is on their way.", status_done: "Request completed." },
+            hi: { what_do_you_need: "आज हम आपकी कैसे सहायता कर सकते हैं?", more: "और विकल्प", send: "अनुरोध भेजें", back: "रद्द करें", hold_to_speak: "बोलने के लिए दबाए रखें", show_crew: "क्रू को दिखाएं", sos: "आपातकालीन SOS", seat: "सीट", read_aloud: "सुनें", slower: "धीमा", select_request: "दिखाने के लिए अनुरोध चुनें", done: "बंद करें", no_voice: "क्षमा करें, यह आवाज़ आपके डिवाइस पर उपलब्ध नहीं है।", safety_history: "सुरक्षा संदेश", auto_read: "सुरक्षा संदेश स्वतः पढ़ें", no_history: "कोई सुरक्षा संदेश नहीं।", listening: "सुन रहा है...", understanding: "आपका अनुरोध समझ रहा है...", did_you_mean: "क्या आपका मतलब था?", yes_send: "हाँ, भेजें", no_try_again: "नहीं, फिर से प्रयास करें", check_carefully: "कृपया ध्यान से जांचें", use_picture_cards: "चित्र कार्ड पर लौटें", type_request: "अपना अनुरोध यहाँ टाइप करें...", sent_title: "अनुरोध भेजा गया", sent_desc: "आपका अनुरोध क्रू को भेज दिया गया है।", saved_title: "ऑफ़लाइन सहेजा गया", saved_desc: "सहेजा गया। कनेक्शन वापस आने पर इसे भेजा जाएगा।", pending: "कनेक्शन लंबित...", status_acknowledged: "क्रू ने आपका अनुरोध देख लिया है।", status_on_the_way: "क्रू रास्ते में है।", status_done: "अनुरोध पूरा हुआ।" },
+            pa: { what_do_you_need: "ਅਸੀਂ ਅੱਜ ਤੁਹਾਡੀ ਕਿਵੇਂ ਮਦਦ ਕਰ ਸਕਦੇ ਹਾਂ?", more: "ਹੋਰ ਵਿਕਲਪ", send: "ਬੇਨਤੀ ਭੇਜੋ", back: "ਰੱਦ ਕਰੋ", hold_to_speak: "ਬੋਲਣ ਲਈ ਦੱਬੀ ਰੱਖੋ", show_crew: "ਕਰੂ ਨੂੰ ਦਿਖਾਓ", sos: "ਐਮਰਜੈਂਸੀ SOS", seat: "ਸੀਟ", read_aloud: "ਸੁਣੋ", slower: "ਹੌਲੀ", select_request: "ਦਿਖਾਉਣ ਲਈ ਬੇਨਤੀ ਚੁਣੋ", done: "ਬੰਦ ਕਰੋ", no_voice: "ਮਾਫ਼ ਕਰਨਾ, ਇਹ ਆਵਾਜ਼ ਤੁਹਾਡੀ ਡਿਵਾਈਸ 'ਤੇ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।", safety_history: "ਸੁਰੱਖਿਆ ਸੁਨੇਹੇ", auto_read: "ਸੁਰੱਖਿਆ ਸੁਨੇਹੇ ਆਪਣੇ ਆਪ ਪੜ੍ਹੋ", no_history: "ਕੋਈ ਸੁਰੱਖਿਆ ਸੁਨੇਹਾ ਨਹੀਂ।", listening: "सुन रहा है...", understanding: "ਤੁਹਾਡੀ ਬੇਨਤੀ ਸਮਝ ਰਿਹਾ ਹੈ...", did_you_mean: "ਕੀ ਤੁਹਾਡਾ ਮਤਲਬ ਸੀ?", yes_send: "ਹਾਂ, ਭੇਜੋ", no_try_again: "ਨਹੀਂ, ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ", check_carefully: "ਕਿਰਪਾ ਕਰਕੇ ਧਿਆਨ ਨਾਲ ਚੈੱਕ ਕਰੋ", use_picture_cards: "ਤਸਵੀਰ ਕਾਰਡ 'ਤੇ ਵਾਪਸ ਜਾਓ", type_request: "ਆਪਣੀ ਬੇਨਤੀ ਇੱਥੇ ਟਾਈਪ ਕਰੋ...", sent_title: "ਬੇਨਤੀ ਭੇਜੀ ਗਈ", sent_desc: "ਤੁਹਾਡੀ ਬੇਨਤੀ ਕਰੂ ਨੂੰ ਭੇਜ ਦਿੱਤੀ ਗਈ ਹੈ।", saved_title: "ਔਫ਼ਲਾਈਨ ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਗਿਆ", saved_desc: "ਸੁਰੱਖਿਅਤ ਕੀਤਾ गया। ਕਨੈਕਸ਼ਨ ਵਾਪਸ ਆਉਣ 'ਤੇ ਇਸਨੂੰ ਭੇਜਿਆ ਜਾਵੇगा।", pending: "ਕਨੈਕਸ਼ਨ ਬਕਾਇਆ...", status_acknowledged: "ਕਰੂ ਨੇ ਤੁਹਾਡੀ ਬੇਨਤੀ ਦੇਖ ਲਈ ਹੈ।", status_on_the_way: "ਕਰੂ ਰਸਤੇ ਵਿੱਚ ਹੈ।", status_done: "ਬੇਨਤੀ ਪੂਰੀ ਹੋਈ।" },
+            ja: { what_do_you_need: "本日はどのようなご用件でしょうか？", more: "その他のオプション", send: "リクエストを送信", back: "キャンセル", hold_to_speak: "長押しして話す", show_crew: "乗務員に見せる", sos: "緊急 SOS", seat: "座席", read_aloud: "聞く", slower: "ゆっくり", select_request: "表示するリクエストを選択", done: "閉じる", no_voice: "申し訳ありません。お使いのデバイスではこの音声を利用できません。", safety_history: "安全に関するメッセージ", auto_read: "安全メッセージの自動読み上げ", no_history: "メッセージはありません。", listening: "聞いています...", understanding: "リクエストを解析中...", did_you_mean: "こちらでよろしいですか？", yes_send: "はい、送信します", no_try_again: "いいえ、やり直します", check_carefully: "内容をご確認ください", use_picture_cards: "ピクチャーカードに戻る", type_request: "リクエストを入力してください...", sent_title: "送信完了", sent_desc: "乗務員にリクエストを送信しました。", saved_title: "オフライン保存", saved_desc: "保存しました。通信が回復次第、送信されます。", pending: "通信待ち...", status_acknowledged: "乗務員がリクエストを確認しました。", status_on_the_way: "乗務員が向かっています。", status_done: "リクエスト完了" }
         };
 
         const state = {
@@ -538,13 +538,16 @@
             recognition.continuous = true;
             recognition.interimResults = true;
             
-            recognition.onstart = () => { voiceErrorOccurred = false; };
+            recognition.onstart = () => { 
+                voiceErrorOccurred = false; 
+            };
             
             recognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     transcript += event.results[i][0].transcript;
                 }
+                
                 let cleanedText = transcript.toLowerCase().trim();
                 
                 if (state.handsFree) {
@@ -574,15 +577,22 @@
 
             recognition.onerror = (event) => {
                 voiceErrorOccurred = true;
-                if (event.error === 'not-allowed') showVoiceFallback("Microphone blocked. Please type.");
+                if (event.error === 'not-allowed') {
+                    showVoiceFallback("Microphone blocked. Please type.");
+                }
             };
 
             recognition.onend = () => {
                 if (voiceErrorOccurred) return;
+                
                 if (state.handsFree && document.getElementById('voice').classList.contains('active')) {
                     try { recognition.start(); } catch(e) {}
-                } else if (!state.handsFree && state.heardText.trim().length > 0 && document.getElementById('voice').classList.contains('active')) {
-                    processVoiceInput(state.heardText);
+                } else if (!state.handsFree) {
+                    if (state.heardText.trim().length > 0 && document.getElementById('voice').classList.contains('active')) {
+                        processVoiceInput(state.heardText);
+                    } else if (document.getElementById('voice-state-listening').style.display !== 'none') {
+                        showVoiceFallback("Did not catch anything. Please type.");
+                    }
                 }
             };
         }
@@ -610,20 +620,26 @@
         };
 
         function handleRequestUpdate(update) {
+            const texts = UI_TEXT[state.lang];
             const replySentence = document.getElementById('reply-sentence');
             const statusIcon = document.getElementById('status-icon');
-            document.getElementById('status-title').innerText = "Request Sent";
+            
+            document.getElementById('status-title').innerText = texts.sent_title;
             document.getElementById('status-badge').style.display = 'none';
 
             if (update.status === 'acknowledged') {
                 statusIcon.innerText = '👀';
-                replySentence.innerText = "The crew has seen your request.";
+                replySentence.innerText = texts.status_acknowledged;
             } else if (update.status === 'on_the_way') {
                 statusIcon.innerText = '🚶';
-                replySentence.innerText = "The crew is on their way.";
+                replySentence.innerText = texts.status_on_the_way;
             } else if (update.status === 'done') {
-                statusIcon.innerText = '✅';
-                replySentence.innerText = "Request completed.";
+                if (update.reply_id) {
+                    const reply = PACK.replies.find(r => r.id === update.reply_id);
+                    if (reply) { statusIcon.innerText = reply.icon; replySentence.innerText = reply.text[state.lang]; }
+                } else {
+                    statusIcon.innerText = '✅'; replySentence.innerText = texts.status_done;
+                }
             }
         }
 
@@ -632,30 +648,17 @@
 
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('seat')) state.seat = urlParams.get('seat').toUpperCase();
-            if (urlParams.has('lang') && PACK.languages[urlParams.get('lang')]) state.lang = urlParams.get('lang');
+            if (urlParams.has('lang') && ENABLED_LANGS.includes(urlParams.get('lang'))) state.lang = urlParams.get('lang');
             if (urlParams.get('debug') === '1') document.getElementById('btn-debug').style.display = 'block';
             if (urlParams.get('demo') === '1') state.isDemo = true;
 
-            state.rowNum = parseInt(state.seat.match(/\d+/)[0]) || 14;
-            state.seatLetter = (state.seat.match(/[a-zA-Z]+/) || ['C'])[0].toUpperCase();
+            state.rowNum = parseInt(state.seat.match(/\d+/)[0]);
+            state.seatLetter = state.seat.match(/[a-zA-Z]+/)[0];
             state.zone = Math.floor((state.rowNum - 1) / 4) + 1;
 
-            renderLanguageSelector();
             updateUI();
             setupRealtimeAnnouncements();
             processOutbox();
-        }
-
-        function renderLanguageSelector() {
-            const selector = document.getElementById('lang-selector');
-            selector.innerHTML = '';
-            Object.entries(PACK.languages).forEach(([code, name]) => {
-                const opt = document.createElement('option');
-                opt.value = code;
-                opt.innerText = name;
-                if (code === state.lang) opt.selected = true;
-                selector.appendChild(opt);
-            });
         }
 
         function setLanguage(newLang) {
@@ -668,17 +671,53 @@
 
         function updateUI() {
             document.documentElement.lang = state.lang;
-            document.getElementById('display-seat').innerText = `Seat: ${state.seat}`;
+            const texts = UI_TEXT[state.lang];
+
+            document.getElementById('display-seat').innerText = `${texts.seat}: ${state.seat}`;
             document.getElementById('wake-word-seat').innerText = state.seat;
-            document.getElementById('title-what-need').innerText = "How may we assist you today?";
+            document.getElementById('title-what-need').innerText = texts.what_do_you_need;
+            document.getElementById('sos-text').innerText = texts.sos;
+            document.getElementById('title-crew-picker').innerText = texts.select_request;
             
+            document.querySelectorAll('.txt-read-aloud').forEach(el => el.innerText = texts.read_aloud);
+            document.querySelectorAll('.txt-slower').forEach(el => el.innerText = texts.slower);
+            document.querySelectorAll('.txt-done').forEach(el => el.innerText = texts.done);
+            document.querySelectorAll('.txt-back').forEach(el => el.innerText = texts.back);
+            document.querySelectorAll('.txt-safety-history').forEach(el => el.innerText = texts.safety_history);
+            document.querySelectorAll('.txt-auto-read').forEach(el => el.innerText = texts.auto_read);
+            document.querySelectorAll('.txt-hold-to-speak').forEach(el => el.innerText = texts.hold_to_speak);
+            document.querySelectorAll('.txt-send').forEach(el => el.innerText = texts.send);
+            document.querySelectorAll('.txt-listening').forEach(el => el.innerText = texts.listening);
+            document.querySelectorAll('.txt-understanding').forEach(el => el.innerText = texts.understanding);
+            document.querySelectorAll('.txt-did-you-mean').forEach(el => el.innerText = texts.did_you_mean);
+            document.querySelectorAll('.txt-yes-send').forEach(el => el.innerText = texts.yes_send);
+            document.querySelectorAll('.txt-no-try-again').forEach(el => el.innerText = texts.no_try_again);
+            document.querySelectorAll('.txt-check-carefully').forEach(el => el.innerText = texts.check_carefully);
+            document.querySelectorAll('.txt-use-cards').forEach(el => el.innerText = texts.use_picture_cards);
+            document.querySelectorAll('.txt-pending').forEach(el => el.innerText = texts.pending);
+            
+            document.getElementById('voice-typed-input').placeholder = texts.type_request;
+
+            renderLanguageBar();
             renderTiles();
+        }
+
+        function renderLanguageBar() {
+            const bar = document.getElementById('language-bar');
+            bar.innerHTML = '';
+            ENABLED_LANGS.forEach(langCode => {
+                const btn = document.createElement('button');
+                btn.innerText = PACK.languages[langCode];
+                if (langCode === state.lang) btn.classList.add('active');
+                btn.onclick = () => setLanguage(langCode);
+                bar.appendChild(btn);
+            });
         }
 
         function renderTiles() {
             const grid = document.getElementById('tiles-grid');
             grid.innerHTML = '';
-            const primaryIds = ['water', 'tea_coffee', 'blanket', 'food', 'restroom', 'unwell', 'call_crew'];
+            const primaryIds = ['water', 'blanket', 'food', 'restroom', 'unwell', 'call_crew'];
             const allRequests = PACK.requests;
             const itemsToShow = state.showAllTiles ? allRequests : allRequests.filter(req => primaryIds.includes(req.id));
 
@@ -686,11 +725,18 @@
                 const btn = document.createElement('button');
                 btn.className = 'tile';
                 btn.onclick = () => openConfirm(req.id);
-                const translatedText = req.text[state.lang] || req.text.en;
                 const englishSub = state.lang !== 'en' ? `<span class="sub-label">${req.text.en}</span>` : '';
-                btn.innerHTML = `<span class="icon" aria-hidden="true">${req.icon}</span><span class="main-label">${translatedText}</span>${englishSub}`;
+                btn.innerHTML = `<span class="icon" aria-hidden="true">${req.icon}</span><span class="main-label">${req.text[state.lang]}</span>${englishSub}`;
                 grid.appendChild(btn);
             });
+
+            if (!state.showAllTiles && allRequests.length > primaryIds.length) {
+                const moreBtn = document.createElement('button');
+                moreBtn.className = 'tile';
+                moreBtn.onclick = () => { state.showAllTiles = true; renderTiles(); };
+                moreBtn.innerHTML = `<span class="icon" aria-hidden="true">➕</span><span class="main-label">${UI_TEXT[state.lang].more}</span>`;
+                grid.appendChild(moreBtn);
+            }
         }
 
         function toggleLargeText() {
@@ -710,8 +756,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'tile';
                 btn.onclick = () => openShowCrewCard(req.id);
-                const translatedText = req.text[state.lang] || req.text.en;
-                btn.innerHTML = `<span class="icon" aria-hidden="true">${req.icon}</span><span class="main-label">${translatedText}</span>`;
+                btn.innerHTML = `<span class="icon" aria-hidden="true">${req.icon}</span><span class="main-label">${req.text[state.lang]}</span>`;
                 grid.appendChild(btn);
             });
         }
@@ -719,7 +764,7 @@
         function openShowCrewCard(reqId) {
             state.currentRequestId = reqId;
             const reqData = PACK.requests.find(r => r.id === reqId);
-            document.getElementById('showcrew-ja').innerText = reqData.text['ja'] || reqData.text.en;
+            document.getElementById('showcrew-ja').innerText = reqData.text.ja;
             document.getElementById('showcrew-en').innerText = reqData.text.en;
             document.getElementById('showcrew-seat').innerText = state.seat;
             show('showcrew');
@@ -729,7 +774,7 @@
             state.currentRequestId = reqId;
             const reqData = PACK.requests.find(r => r.id === reqId);
             document.getElementById('confirm-icon').innerText = reqData.icon;
-            document.getElementById('confirm-sentence').innerText = reqData.text[state.lang] || reqData.text.en;
+            document.getElementById('confirm-sentence').innerText = reqData.text[state.lang];
             show('confirm');
         }
 
@@ -761,12 +806,15 @@
             state.handsFree = false;
             const toggle = document.getElementById('hands-free-toggle');
             if (toggle) toggle.checked = false;
-            if (recognition) { try { recognition.stop(); } catch(e) {} }
+            if (recognition) {
+                try { recognition.stop(); } catch(e) {}
+            }
         }
 
         function startVoice(e) {
             if(e) e.preventDefault();
             stopHandsFree();
+            
             state.heardText = '';
             voiceStartTime = Date.now();
             show('voice');
@@ -778,7 +826,7 @@
             
             recognition.continuous = false; 
             recognition.interimResults = true;
-            recognition.lang = PACK.speech_tags[state.lang] || 'en-IN';
+            recognition.lang = PACK.speech_tags[state.lang] || 'en-US';
             try { recognition.start(); } catch(err) {} 
         }
 
@@ -808,40 +856,37 @@
         }
 
         async function processVoiceInput(text) {
-    document.getElementById('voice-state-listening').style.display = 'none';
-    document.getElementById('voice-state-fallback').style.display = 'none';
-    document.getElementById('voice-state-understanding').style.display = 'block';
+            document.getElementById('voice-state-listening').style.display = 'none';
+            document.getElementById('voice-state-fallback').style.display = 'none';
+            document.getElementById('voice-state-understanding').style.display = 'block';
 
-    // GitHub Pages par backend nahi hai, isliye automatic fallback/demo mode activate kar do
-    if (state.isDemo || window.location.hostname.includes('github.io')) {
-        setTimeout(() => {
-            const mockData = {
-                category: 'routine', 
-                subtype: 'water', 
-                text_ja: 'お水をお願いします', 
-                text_en: 'Water, please',
-                back_translation: text, 
-                confidence: 0.95
-            };
-            showVoiceConfirmBack(mockData);
-        }, 1000);
-        return;
-    }
+            if (state.isDemo) {
+                setTimeout(() => {
+                    const mockData = {
+                        category: 'routine', subtype: 'water', text_ja: 'お水をお願いします', text_en: 'Water, please',
+                        back_translation: state.lang === 'hi' ? 'मुझे पानी चाहिए' : (state.lang === 'pa' ? 'ਮੈਨੂੰ ਪਾਣੀ ਚਾਹੀਦਾ ਹੈ' : 'I would like water'),
+                        confidence: 0.95
+                    };
+                    showVoiceConfirmBack(mockData);
+                }, 1200);
+                return;
+            }
 
-    try {
-        const res = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text, lang: state.lang }) });
-        if (!res.ok) throw new Error("API failed");
-        showVoiceConfirmBack(await res.json());
-    } catch (err) {
-        console.error(err);
-        showVoiceFallback("Connection error. Please type or use cards.");
-    }
-}
+            try {
+                const res = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text, lang: state.lang }) });
+                if (!res.ok) throw new Error("API failed");
+                showVoiceConfirmBack(await res.json());
+            } catch (err) {
+                console.error(err);
+                showVoiceFallback("Connection error. Please type or use cards.");
+            }
+        }
 
         function showVoiceConfirmBack(data) {
             state.aiResult = data;
             document.getElementById('voice-confirm-main').innerText = data.back_translation;
             document.getElementById('voice-confirm-ja').innerText = data.text_ja;
+            document.getElementById('voice-warning').style.display = data.confidence < 0.6 ? 'block' : 'none';
             show('voice-confirm');
         }
 
@@ -854,7 +899,7 @@
                 const outbox = getOutbox();
                 outbox.push(req);
                 localStorage.setItem('outbox', JSON.stringify(outbox));
-            } catch(e) {}
+            } catch(e) { console.error("Outbox save failed", e); }
         }
 
         async function submitRequest(req) {
@@ -862,10 +907,13 @@
                 try {
                     const { data, error } = await DB.insertRequest(req);
                     if (error) throw error;
+                    
                     if (data && data[0]) DB.subscribeRequestUpdates(data[0].id);
                     renderStatusScreen(true); 
                     return;
-                } catch (e) {}
+                } catch (e) {
+                    console.error("Insert failed, queueing offline:", e);
+                }
             }
             saveToOutbox(req);
             renderStatusScreen(false);
@@ -874,34 +922,45 @@
         async function processOutbox() {
             if (state.isDemo || !navigator.onLine || !db) return;
             const outbox = getOutbox();
-            if (outbox.length === 0) return;
+            
+            if (outbox.length === 0) {
+                if (document.getElementById('status').classList.contains('active') && document.getElementById('status-badge').style.display !== 'none') {
+                    renderStatusScreen(true);
+                }
+                return;
+            }
+            
             const req = outbox[0];
             try {
                 const { error } = await db.from('requests').insert([req]);
                 if (!error) {
                     outbox.shift();
-                    localStorage.setItem('outbox', JSON.stringify(outbox));
+                    try { localStorage.setItem('outbox', JSON.stringify(outbox)); } catch(e){}
                     processOutbox();
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error("Outbox send failed", e);
+            }
         }
 
         window.addEventListener('online', () => { processOutbox(); });
+        setInterval(processOutbox, 10000);
 
         function renderStatusScreen(isSent) {
+            const texts = UI_TEXT[state.lang];
             const titleEl = document.getElementById('status-title');
             const descEl = document.getElementById('reply-sentence');
             const badgeEl = document.getElementById('status-badge');
             const iconEl = document.getElementById('status-icon');
             
             if (isSent) {
-                titleEl.innerText = "Request Sent";
-                descEl.innerText = "Your request has been sent to the cabin crew.";
+                titleEl.innerText = texts.sent_title;
+                descEl.innerText = texts.sent_desc;
                 badgeEl.style.display = 'none';
                 iconEl.innerText = '📨';
             } else {
-                titleEl.innerText = "Saved Offline";
-                descEl.innerText = "Will be sent automatically when online.";
+                titleEl.innerText = texts.saved_title;
+                descEl.innerText = texts.saved_desc;
                 badgeEl.style.display = 'inline-block';
                 iconEl.innerText = '💾';
             }
@@ -910,17 +969,40 @@
 
         async function confirmVoiceSend() {
             const req = {
-                seat_row: state.rowNum, seat_letter: state.seatLetter, zone: state.zone,
-                type: state.aiResult?.subtype || 'water', language: state.lang, status: 'waiting'
+                seat_row: state.rowNum, 
+                seat_letter: state.seatLetter, 
+                zone: state.zone,
+                type: state.aiResult.subtype || 'custom', 
+                language: state.lang,
+                status: 'waiting'
             };
             await submitRequest(req);
         }
 
         async function sendTapRequest() {
             if (!state.currentRequestId) return;
+            const isMedical = state.currentRequestId === 'unwell';
+            
+            if (isMedical && db) {
+                try {
+                    await db.from('alerts').insert([{
+                        seat_row: state.rowNum,
+                        seat_letter: state.seatLetter,
+                        kind: 'unwell',
+                        acknowledged: false
+                    }]);
+                } catch (e) {
+                    console.error("Medical alert failed", e);
+                }
+            }
+
             const req = {
-                seat_row: state.rowNum, seat_letter: state.seatLetter, zone: state.zone,
-                type: state.currentRequestId, language: state.lang, status: 'waiting'
+                seat_row: state.rowNum, 
+                seat_letter: state.seatLetter, 
+                zone: state.zone,
+                type: state.currentRequestId, 
+                language: state.lang,
+                status: 'waiting'
             };
             await submitRequest(req);
         }
@@ -938,12 +1020,17 @@
             const safeData = PACK.safety.find(s => s.id === phraseId);
             if (!safeData) return;
 
+            state.announcementsHistory.unshift({
+                icon: safeData.icon, text: safeData.text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+            if (state.announcementsHistory.length > 5) state.announcementsHistory.pop();
+
             document.getElementById('safety-overlay-icon').innerText = safeData.icon;
-            document.getElementById('safety-overlay-main').innerText = safeData.text[state.lang] || safeData.text.en;
+            document.getElementById('safety-overlay-main').innerText = safeData.text[state.lang];
             document.getElementById('safety-overlay-en').innerText = safeData.text.en;
             document.getElementById('safety-overlay').classList.remove('hidden');
 
-            if (state.autoReadSafety) speakText(safeData.text[state.lang] || safeData.text.en, state.lang);
+            if (state.autoReadSafety) speakText(safeData.text[state.lang], state.lang);
             if (safetyTimeout) clearTimeout(safetyTimeout);
             safetyTimeout = setTimeout(closeSafetyCaption, 20000);
         }
@@ -955,9 +1042,22 @@
 
         function showHistory() {
             const list = document.getElementById('history-list');
-            list.innerHTML = `<p style="text-align:center; color: var(--jal-gray);">No safety messages issued.</p>`;
+            list.innerHTML = '';
+            if (state.announcementsHistory.length === 0) {
+                list.innerHTML = `<p style="text-align:center; font-size: 20px; color: var(--jal-gray);">${UI_TEXT[state.lang].no_history}</p>`;
+            } else {
+                state.announcementsHistory.forEach(ann => {
+                    const card = document.createElement('div');
+                    card.className = 'placeholder-card';
+                    card.style.margin = '0'; card.style.textAlign = 'left'; card.style.display = 'flex'; card.style.alignItems = 'center'; card.style.gap = '20px'; card.style.padding = '20px';
+                    card.innerHTML = `<div style="font-size: 40px;" aria-hidden="true">${ann.icon}</div><div><div style="font-size: var(--base-text); font-weight: 600; color: var(--jal-dark);">${ann.text[state.lang]}</div><div style="font-size: 14px; color: var(--jal-gray); margin-top: 5px;">${ann.text.en} &bull; ${ann.time}</div></div>`;
+                    list.appendChild(card);
+                });
+            }
             show('history');
         }
+
+        function testAnnouncement() { handleNewAnnouncement('seatbelt'); }
 
         function toggleSlower(checkbox) {
             state.slowerVoice = checkbox.checked;
@@ -967,15 +1067,20 @@
         function speakText(textToSpeak, langCode) {
             if (!window.speechSynthesis) return;
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            utterance.lang = PACK.speech_tags[langCode] || 'en-IN';
+            utterance.lang = PACK.speech_tags[langCode] || langCode;
             utterance.rate = state.slowerVoice ? 0.8 : 1.0;
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                const targetLang = utterance.lang.split('-')[0];
+                const hasVoice = voices.some(v => v.lang.startsWith(targetLang));
+                if (!hasVoice) { alert(UI_TEXT[state.lang].no_voice); return; }
+            }
             window.speechSynthesis.speak(utterance);
         }
 
         function speakCurrentRequest() {
             if (!state.currentRequestId) return;
-            const reqData = PACK.requests.find(r => r.id === state.currentRequestId);
-            speakText(reqData.text[state.lang] || reqData.text.en, state.lang);
+            speakText(PACK.requests.find(r => r.id === state.currentRequestId).text[state.lang], state.lang);
         }
 
         function speakReply() { speakText(document.getElementById('reply-sentence').innerText, state.lang); }
@@ -983,6 +1088,7 @@
         function show(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === screenId));
             if (screenId === 'home' || screenId === 'welcome') state.currentRequestId = null;
+            
             const activeScreen = document.getElementById(screenId);
             if (activeScreen) activeScreen.focus();
         }
@@ -996,9 +1102,14 @@
                 if (db) {
                     try {
                         await db.from('alerts').insert([{
-                            seat_row: state.rowNum, seat_letter: state.seatLetter, kind: 'sos', acknowledged: false
+                            seat_row: state.rowNum,
+                            seat_letter: state.seatLetter,
+                            kind: 'sos',
+                            acknowledged: false
                         }]);
-                    } catch (e) {}
+                    } catch (e) {
+                        console.error("SOS alert dispatch failed", e);
+                    }
                 }
             }, 1000);
         }
@@ -1006,6 +1117,7 @@
             if (sosTimer) { clearTimeout(sosTimer); sosTimer = null; document.getElementById('sos-progress').style.width = '0%'; }
         }
 
+        if (window.speechSynthesis) window.speechSynthesis.getVoices();
         initApp();
     </script>
 </body>
