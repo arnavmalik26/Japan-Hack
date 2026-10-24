@@ -307,13 +307,6 @@
             border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 20px;
         }
 
-        /* Welcome Landing Screen */
-        #welcome-screen {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; background: var(--jal-white); text-align: center;
-        }
-        .welcome-logo { font-family: serif; font-size: 48px; color: var(--jal-red); font-weight: bold; letter-spacing: 4px; margin-bottom: 20px; }
-
         @media (max-width: 900px) {
             .home-container { flex-direction: column; }
             .tiles-grid { grid-template-columns: repeat(2, 1fr); }
@@ -522,15 +515,15 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+        const SUPABASE_URL = 'https://afufblastxlsqhbfwhdd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmdWZibGFzdHhsc3FoYmZ3aGRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4Mjc5NzgsImV4cCI6MjEwODQwMzk3OH0.j5197_xVq9yXFG3QmlZa710S637w1idC3b_cMjgw69I';
         let db = null;
         
         if (typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('http')) {
             db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
-        const ENABLED_LANGS = ['en', 'ja', 'hi', 'pa']; // Reordered to put global languages first
+        const ENABLED_LANGS = ['en', 'ja', 'hi', 'pa'];
         
         const UI_TEXT = {
             en: { what_do_you_need: "How may we assist you today?", more: "More Options", send: "Send Request", back: "Cancel", hold_to_speak: "Hold to speak", show_crew: "Show this to the crew", sos: "Emergency SOS", seat: "Seat", read_aloud: "Listen", slower: "Slower", select_request: "Select a request to display", done: "Close Screen", no_voice: "Sorry, this voice is not available on your device.", safety_history: "Safety Messages", auto_read: "Auto-read safety messages", no_history: "No safety messages issued.", listening: "Listening...", understanding: "Understanding your request...", did_you_mean: "Did you mean?", yes_send: "Yes, Send", no_try_again: "No, Try Again", check_carefully: "Low confidence: Please check carefully", use_picture_cards: "Return to Picture Cards", type_request: "Type your request here...", sent_title: "Request Sent", sent_desc: "Your request has been sent to the crew.", saved_title: "Saved Offline", saved_desc: "Saved. It will be sent automatically when the connection returns.", pending: "Pending Connection...", status_acknowledged: "The crew has seen your request.", status_on_the_way: "The crew is on their way.", status_done: "Request completed." },
@@ -1023,7 +1016,24 @@
         let sosTimer;
         function startSOS() {
             document.getElementById('sos-progress').style.width = '100%';
-            sosTimer = setTimeout(() => { show('sos'); document.getElementById('sos-progress').style.width = '0%'; }, 1000);
+            sosTimer = setTimeout(async () => { 
+                show('sos'); 
+                document.getElementById('sos-progress').style.width = '0%';
+                if (db) {
+                    try {
+                        await db.from('alerts').insert([{
+                            flight: 'JL-DEMO',
+                            seat: state.seat,
+                            seat_row: state.rowNum,
+                            seat_letter: state.seatLetter,
+                            kind: 'sos',
+                            acknowledged: false
+                        }]);
+                    } catch (e) {
+                        console.error("SOS alert dispatch failed", e);
+                    }
+                }
+            }, 1000);
         }
         function cancelSOS() {
             if (sosTimer) { clearTimeout(sosTimer); sosTimer = null; document.getElementById('sos-progress').style.width = '0%'; }
